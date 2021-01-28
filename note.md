@@ -48,3 +48,5 @@ C++标准库中很多资源占用类型,比如IO对象std::ifstream，std::uniqu
 ## std::enable_if
 
 ## alignas & alignof
+
+## typename ... args
