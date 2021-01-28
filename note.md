@@ -49,6 +49,16 @@ C++标准库中很多资源占用类型,比如IO对象std::ifstream，std::uniqu
 
 ## alignas & alignof
 
-## typename ... args
+## 可变参数列表
 
 ## 分支预测
+
+## 数学操作函数
+`std::ceil(arg)`表示对arg向上取整  
+`std::floor(arg)`表示对arg向下取整  
+`std::log2(arg)`表示对arg取2的对数
+```cc
+std::ceil(5.88)//6 
+std::floor(5.88)//5
+std::log2(65536)//16
+```
