@@ -36,14 +36,14 @@
 * std::function
 * bind创建的对象
 ## 不可拷贝的对象
-C++标准库中很多资源占用类型,比如IO对象std::ifstream，std::unique_ptr，std::thread都只可以移动，不能拷贝
+C++标准库中很多资源占用类型,比如IO对象std::ifstream，std::unique_ptr，std::thread, std::future都只可以移动，不能拷贝
 ## std::for_each
 
 ## std::mem_fn
 
 ## std::call_once
 
-## new(size_t, void*)
+## new(size_t, void*) & std::allocator
 
 ## std::enable_if
 
