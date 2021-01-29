@@ -62,3 +62,5 @@ std::ceil(5.88)//6
 std::floor(5.88)//5
 std::log2(65536)//16
 ```
+
+## #pragma unroll/nounroll
