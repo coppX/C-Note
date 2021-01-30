@@ -43,11 +43,27 @@ C++标准库中很多资源占用类型,比如IO对象std::ifstream，std::uniqu
 
 ## std::call_once
 
-## new(size_t, void*) & std::allocator
+## new(size_t, void*)
 
+## std::allocator
+C++ STL中很多的容器都提供了具有allocator参数的构造函数，例如:
+`constexpr explicit vector(size_type count,const Allocator& alloc = Allocator());`
+C++里面采用new来动态分配内存。默认情况下分配的内存会默认初始化，也就是意味着内置类型或者组合类型的对象值将是未定义的，而类对象会采用默认构造函数来初始化这块内存。这对于我们来讲，分配内存的操作不够灵活，所以allocator这个类就诞生了。allocator定义在memory头文件中，它提供了一种类型感知(需要提供类型)的内存分配方法，它分配的内存是原始的，未构造的。
+```
+allocator<string> alloc;            //可以分配string的allocator对象
+auto const p = alloc.allocate(n);   //分配n个未初始化的string
+auto q = p;
+alloc.construct(q++);               //*q为空字符串
+alloc.construct(q++, 10, 'c');      //*q为cccccccccc
+alloc.construct(q++, "hi");         //*q为hi
+//逆序释放
+while(q != p)
+    alloc.destroy(--q);             //释放我们真正构造的string
+alloc.deallocate(p, n);             //归还内存给系统
+```
 ## std::enable_if
 
-## alignas & alignof
+## alignas & alignof & 位域
 
 ## 可变参数列表
 
@@ -64,3 +80,9 @@ std::log2(65536)//16
 ```
 
 ## #pragma unroll/nounroll
+
+## constexpr
+
+## nonexcept & nothrow
+
+## extern "C"
