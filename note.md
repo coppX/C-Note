@@ -48,7 +48,7 @@ C++标准库中很多资源占用类型,比如IO对象std::ifstream，std::uniqu
 ## allocator
 如果你留意一下就会发现C++ STL中所有的容器都提供了allocator参数来分配内存，STL推荐使用allocator而不是new/delete，例如:
 ```cc
-template < class T, class Allocator = allocator<T>> class vector;
+template<class T, class Allocator = allocator<T>> class vector;
 ```
 C++里面采用new来动态分配内存。默认情况下分配的内存会默认初始化，也就是意味着内置类型或者组合类型的对象值将是未定义的，而类对象会采用默认构造函数来初始化这块内存。
 ```cc
@@ -61,7 +61,7 @@ int *pi = new int();    //初始化为0
 //列表初始化
 vector<int> *pv = new vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 ```
-这对于我们来讲，分配内存的操作不够灵活，所以allocator这个类就诞生了。allocator定义在memory头文件中，它提供了一种类型感知(需要提供类型)的内存分配方法，它分配的内存是原始的，未构造的。将内存的分配和内存构造分离开来。
+这对于我们来讲，分配内存的操作不够灵活，所以allocator这个类就诞生了(默认的std::allocator里面采用的operator new来分配空间的，我们可以自定义allocator采用其他分配方式，比如下方例子中的malloc)。allocator定义在memory头文件中，它提供了一种类型感知(需要提供类型)的内存分配方法，它分配的内存是原始的，未构造的。将内存的分配和内存构造分离开来。
 ### std::allocator
 ```cc
 allocator<string> alloc;            //可以分配string的allocator对象
@@ -79,7 +79,14 @@ alloc.deallocate(p, n);             //归还内存给系统
 ```
 
 ### 自定义allocator例子
-[代码](https://en.cppreference.com/w/cpp/named_req/Allocator)
+自定义的allocator必须实现的接口
+- 拷贝构造函数
+- operator==
+- operator!=
+- allocate
+- deallocate  
+
+[例子来源点击查看](https://en.cppreference.com/w/cpp/named_req/Allocator)
 ```cc
 #include <cstdlib>
 #include <new>
@@ -131,9 +138,82 @@ int main()
   v.push_back(42);
 }
 ```
+
+## align & alignas & alignof & alignment_of & 位域
+### 内存对齐
+每个对象类型都有被称为对齐要求的性质，表示这个类型对象在内存中占用的连续相邻地址的字节数(类型std::size_t，总是2的幂，比如char对齐1，int对齐4)  
+结构体的对齐
+```cc
+struct A{ //  32位机器
+  char a; //1个字节，对齐4个字节
+  int b;  //4个字节，对齐4个字节
+  short c;//2个字节，对齐4个字节
+}
+```
+抛开对齐来看，结构体A的大小应该是7个字节，但是为了提高内存的访问效率，比如32位的cpu，每个总线周期都是从偶地址开始读取内存数据，如果不是偶数地址的数据(比如没有对齐的A.b)，则需要两个总线周期才能读取到相要的数据，所以需要将内存中的数据进行对齐放置  
+内存对齐规则:  
+各成员变量存放的起始地址相对于结构的起始地址的偏移量必须为该变量的类型所占用的字节数的倍数，各成员变量在存放的时候根据在结构中出现的顺序依次申请空间，同时按照上面的对齐方式调整位置，空缺的字节自动填充，同时为了确保结构的大小为结构的字节边界数(即该结构中占用最大的空间的类型的字节数)的倍数，所以在为最后一个成员变量申请空间后，还会根据需要自动填充空缺的字节。
+### std::algin
+```cc
+void* align(
+  size_t alignment,     //input 欲求的对齐量(2的幂，否则align行为是未定义的)
+  size_t size,          //input 要被对齐的存储大小
+  void*& ptr,           //input/output 指向至少有space字节的连续存储的指针
+  size_t& space         //input/output 要在其中操作的缓冲区的大小
+)
+```
+std::align的作用:将一块给定的内存(起始地址ptr，长度space)，按照我们想要的方式(给定内存中的前size个字节按照alignment大小,要这size的空间首地址是alignment的倍数,所以可能导致对齐后的首地址会移动位置)进行对齐操作,然后获得符合要求的一块内存地址。如果space太小(小于size或者不够调整对齐空间, newptr - ptr + size > space, 请参考源码)，align啥也不干，返回nullptr。否则，ptr变为为对齐后的首地址，space则变为对齐后剩余的调整空间(减去对齐消耗的空间);  
+GCC's `std::align`[implementation](https://github.com/gcc-mirror/gcc/blob/41d6b10e96a1de98e90a7c0378437c3255814b16/libstdc%2B%2B-v3/include/std/memory#L114)  
+LLVM's `std::align`[implementation](https://github.com/llvm-mirror/libcxx/blob/6952d1478ddd5a1870079d01f1a0e1eea5b09a1a/src/memory.cpp#L217)
+
+```cc
+#include <type_traits> // std::alignment_of()
+#include <memory>
+//...
+char buffer[256]; // for simplicity
+size_t alignment = std::alignment_of<int>::value;
+void * ptr = buffer;
+std::size_t space = sizeof(buffer); // Be sure this results in the true size of your buffer
+
+while (std::align(alignment, sizeof(MyObj), ptr, space)) {
+    // You now have storage the size of MyObj, starting at ptr, aligned on
+    // int boundary. Use it here if you like, or save off the starting address
+    // contained in ptr for later use.
+    // ...
+    // Last, move starting pointer and decrease available space before
+    // the while loop restarts.
+    ptr = reinterpret_cast<char*>(ptr) + sizeof(MyObj);
+    space -= sizeof(MyObj);
+}
+// At this point, align() has returned a null pointer, signaling it is not
+// possible to allow more aligned storage in this buffer.
+```
+### alignas & alignof
+alignas是用来指定变量或者用户定义类型的对齐方式。  
+alignof是获取指定变量或者用户定义类型的对齐方式。
+```cc
+// alignas_alignof.cpp
+// compile with: cl /EHsc alignas_alignof.cpp
+#include <iostream>
+
+struct alignas(16) Bar
+{
+    int i;        // 4 bytes
+    int n;        // 4 bytes
+    alignas(4) char arr[3];
+    short s;      // 2 bytes
+};
+
+int main()
+{
+    std::cout << alignof(Bar) << std::endl; // output: 16
+}
+```
+### alignment_of
+alignment_of是对alignof进行了封装，alignment_of类里面包含alignof类型的value，可以通过()获取，即`alignment_of<int>()`
+
 ## std::enable_if
 
-## alignas & alignof & 位域
 
 ## 可变参数列表
 
@@ -149,7 +229,7 @@ std::floor(5.88)//5
 std::log2(65536)//16
 ```
 
-## #pragma unroll/nounroll
+## #pragma unroll/nounroll/pack
 
 ## constexpr
 
