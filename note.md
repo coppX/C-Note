@@ -139,7 +139,7 @@ int main()
 }
 ```
 
-## align & alignas & alignof & alignment_of & 位域
+## align & alignas & alignof & alignment_of
 ### 内存对齐
 每个对象类型都有被称为对齐要求的性质，表示这个类型对象在内存中占用的连续相邻地址的字节数(类型std::size_t，总是2的幂，比如char对齐1，int对齐4)  
 结构体的对齐
@@ -162,7 +162,7 @@ void* align(
   size_t& space         //input/output 要在其中操作的缓冲区的大小
 )
 ```
-std::align的作用:将一块给定的内存(起始地址ptr，长度space)，按照我们想要的方式(给定内存中的前size个字节按照alignment大小,要这size的空间首地址是alignment的倍数,所以可能导致对齐后的首地址会移动位置)进行对齐操作,然后获得符合要求的一块内存地址。如果space太小(小于size或者不够调整对齐空间, newptr - ptr + size > space, 请参考源码)，align啥也不干，返回nullptr。否则，ptr变为为对齐后的首地址，space则变为对齐后剩余的调整空间(减去对齐消耗的空间);  
+std::align的作用:将一块给定的内存(起始地址ptr，长度space)，按照我们想要的方式(给定内存中的前size个字节按照alignment大小对齐,要求这size的空间首地址是alignment的倍数,所以可能导致对齐后的首地址会移动位置)进行对齐操作,然后获得符合要求的一块内存地址。如果space太小(小于size或者不够调整对齐空间, 即newptr - ptr + size > space, 请参考源码)，align啥也不干，返回nullptr。否则，ptr变为为对齐后的首地址，space则变为对齐后剩余的调整空间(减去对齐消耗的空间newptr-ptr);  
 GCC's `std::align`[implementation](https://github.com/gcc-mirror/gcc/blob/41d6b10e96a1de98e90a7c0378437c3255814b16/libstdc%2B%2B-v3/include/std/memory#L114)  
 LLVM's `std::align`[implementation](https://github.com/llvm-mirror/libcxx/blob/6952d1478ddd5a1870079d01f1a0e1eea5b09a1a/src/memory.cpp#L217)
 
