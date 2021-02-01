@@ -212,6 +212,8 @@ int main()
 ### alignment_of
 alignment_of是对alignof进行了封装，alignment_of类里面包含alignof类型的value，可以通过()获取，即`alignment_of<int>()`
 
+## SFINAE(Substitution Failure Is Not An Error,即匹配失败不是错误)
+
 ## std::enable_if
 
 
