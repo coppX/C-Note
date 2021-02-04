@@ -15,12 +15,6 @@
 
 注:函数式编程也是对参数直接拷贝，而不是传引用
 
-## std::move
-
-## std::forward
-
-## std::move和std::forward的区别
-
 ## unordered_map和map的区别
 
 ## push_back和emplace_back的区别
@@ -210,13 +204,6 @@ int main()
 ### alignment_of
 alignment_of是对alignof进行了封装，alignment_of类里面包含alignof类型的value，可以通过()获取，即`alignment_of<int>()`
 
-## SFINAE(Substitution Failure Is Not An Error,即匹配失败不是错误)
-
-## 模板篇
-为了生成一个实例化版本，编译器通常需要掌握函数模板或类模板成员函数的定义，函数模板和类模板成员函数的定义通常放在头文件中，模板头文件既包括声明也包括定义。
-## std::enable_if
-
-
 ## 可变参数列表
 
 ## 分支预测
@@ -247,9 +234,8 @@ template<class T, class Deleter = std::default_delete<T>> class unique_ptr;
 ```
 通过在编译时绑定删除器，unique_ptr避免了间接调用删除器的运行时开销，通过在运行时绑定删除器，shared_ptr使用户重载删除器更为方便。
 
-
-## remove_reference
-
+# 模板篇
+为了生成一个实例化版本，编译器通常需要掌握函数模板或类模板成员函数的定义，函数模板和类模板成员函数的定义通常放在头文件中，模板头文件既包括声明也包括定义。
 ## 引用折叠和右值引用参数
 
 ### 左值 & 右值
@@ -276,3 +262,26 @@ X& &、X& &&和X&& &都会折叠成类型X&
 这两个规则导致了两个重要结果:
 - 如果一个函数参数是一个指向模板类型参数的右值引用(如，T&&)，则它可以被绑定到一个左值；且
 - 如果实参是一个左值，则推断出来的模板实参类型将是一个左值引用，且函数参数将被实例化为一个(普通)左值引用参数(T&)
+## remove_reference
+我们用`remove_reference`来获得元素类型。`remove_reference`模板有一个模板类型参数和一个名为type(public，remove_reference是个struct)的类型成员。如果我们用一个引用类型实例化`remove_reference`,则type表示被引用的类型，例如：`remove_reference<int&>::type`就是`int`。
+## std::move
+我们不能直接将一个右值引用绑定到一个左值上，但是`std::move`可以帮我们做到这件事，标准库是这样定义`std::move`的：
+```cc
+template<typename T>
+typename remove_reference<T>::type&& move(T&& t)
+{
+  return static_cast<typename remove_reference<T>::type&&>(t);
+}
+```
+`std::move`是一个模板函数，它可以接受任何类型的实参，因为他的函数参数T&&是一个指向模板类型参数的右值引用。通过引用折叠，此参数可以与任何类型的实参(左值右值都可以)匹配。  
+返回类型是模板参数T类型的右值引用，返回参数前面加上typename关键字是因为作用域运算符::后面跟的可能是类型或者是static数据成员，我们用typename来显示指示这里的`remove_reference<T>::type`是一个类型而不是static数据成员，`remove_reference`函数会去掉T的引用属性(如果T是引用类型会得到T所引用对象)。  
+这里的左值往右值转换是由`static_cast`来完成的，虽然不能隐式地将一个左值转换成右值，但是我们可以用`static_cast`来显示的转换。
+
+## std::forward完美转发
+
+## std::move和std::forward的区别
+
+## std::enable_if
+
+## SFINAE(Substitution Failure Is Not An Error,即匹配失败不是错误)
+
