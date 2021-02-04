@@ -262,6 +262,8 @@ X& &、X& &&和X&& &都会折叠成类型X&
 这两个规则导致了两个重要结果:
 - 如果一个函数参数是一个指向模板类型参数的右值引用(如，T&&)，则它可以被绑定到一个左值；且
 - 如果实参是一个左值，则推断出来的模板实参类型将是一个左值引用，且函数参数将被实例化为一个(普通)左值引用参数(T&)
+
+如果一个函数参数是指向模板类型参数的右值引用(如,`T&&`)，它对应的实参的const属性和左值/右值属性将得到保持。
 ## remove_reference
 我们用`remove_reference`来获得元素类型。`remove_reference`模板有一个模板类型参数和一个名为type(public，remove_reference是个struct)的类型成员。如果我们用一个引用类型实例化`remove_reference`,则type表示被引用的类型，例如：`remove_reference<int&>::type`就是`int`。
 ## std::move
@@ -278,7 +280,15 @@ typename remove_reference<T>::type&& move(T&& t)
 这里的左值往右值转换是由`static_cast`来完成的，虽然不能隐式地将一个左值转换成右值，但是我们可以用`static_cast`来显示的转换。
 
 ## std::forward完美转发
+与`std::move`不同，`std::forward`必须通过显式模板实参来调用。`std::forward`返回该显示实参类型的右值引用。即，`std::forward<T>`的返回类型是`T&&`。当用于一个指向模板参数类型的右值引用函数参数(`T&&`)时，`std::forward`会保持实参类型的所有细节。
+```cc
+template<typename Type> intermediary(Type &&arg)
+{
+  finalFcn(std::forward<Type>(arg));
+}
+```
 
+例子中我们使用Type作为forward的显示模板实参类型，它是从arg推断出来的。由于arg是一个模板类型参数的右值引用，Type将表示传递给arg的实参的所有类型信息。如果实参是一个右值(如，`int&&`)，则Type是一个普通(非引用)类型`int`,forward<int>将返回`int&&`，如果实参是一个左值(如，`int&`，则通过引用折叠，Type本身是一个左值引用类型(`int&`)。在此情况下，返回类型是一个指向左值引用类型的右值引用。即`int&& &`，经过引用折叠后返回的类型就变成了`T&`。
 ## std::move和std::forward的区别
 
 ## std::enable_if
