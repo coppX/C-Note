@@ -204,8 +204,6 @@ int main()
 ### alignment_of
 alignment_of是对alignof进行了封装，alignment_of类里面包含alignof类型的value，可以通过()获取，即`alignment_of<int>()`
 
-## 可变参数列表
-
 ## 分支预测
 
 ## 数学操作函数
@@ -289,7 +287,25 @@ template<typename Type> intermediary(Type &&arg)
 ```
 
 例子中我们使用Type作为forward的显示模板实参类型，它是从arg推断出来的。由于arg是一个模板类型参数的右值引用，Type将表示传递给arg的实参的所有类型信息。如果实参是一个右值(如，`int&&`)，则Type是一个普通(非引用)类型`int`,forward<int>将返回`int&&`，如果实参是一个左值(如，`int&`，则通过引用折叠，Type本身是一个左值引用类型(`int&`)。在此情况下，返回类型是一个指向左值引用类型的右值引用。即`int&& &`，经过引用折叠后返回的类型就变成了`T&`。
-## std::move和std::forward的区别
+## 可变参数模板...
+一个可变参数模板就是接受可变数目参数的模板函数或者模板类。可变数目的参数被称为参数包。存在两种参数包:
+- 模板参数包，表示零个或者多个模板参数
+- 函数参数包，表示零个或者多个函数参数
+  参数包的表示是用省略号`...`来表示的,模板中就是`class...`或者`typename...`。如:
+  ```cc
+  template<typename T, typename... Args>
+  void foo(const T &t, const Args& ... rest);
+  ```
+这里的Args是模板参数包，rest就是函数参数包。可以表示数目不确定类型不确定的参数，编译器会通过调用这个函数的实参来推断模板参数类型和数量。
+如果我们需要在代码里面拿到这个参数包里面具体有多少个参数(每次调用参数数量都可能不一样)，可以采用`sizeof...`操作符
+```cc
+template<typename... Args>
+void g(Args ... args) {
+  cout << sizeof...(Args) <<endl;   //类型参数的数目
+  cout << sizeof...(args) <<endl;   //函数参数的数目
+}
+```
+
 
 ## std::enable_if
 
