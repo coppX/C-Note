@@ -34,7 +34,7 @@ C++标准库中很多资源占用类型,比如IO对象std::ifstream，std::uniqu
 ```cc
 template<class _InputIterator, class _Function>
 inline _LIBCPP_INLINEVISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX17
-_Function for_each(_InputIterator __first, _InputIterator _last_, _Function __f)
+_Function for_each(_InputIterator __first, _InputIterator __last, _Function __f)
 {
     for (; __first != __last; ++__first)
         __f(*__first);
@@ -75,9 +75,32 @@ int main()
 }
 ```
 ## std::mem_fn
+llvm中的实现[点击查看源代码](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/functional#L1402)
+std::mem_fn生成指向成员指针的包装对象，它可以存储，复制及调用执行成员指针。到对象的引用和指针(含智能指针)可在调用std::mem_fn时使用
+这里结合std::for_each举例(实际上std::mem_fn很多时候是配合std::for_each使用的)
+```cc
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <algorithm>
+#include <functional>
 
+int main() {
+    std::vector<std::thread> threads;
+    for (int i = 0; i < 10; i++) {
+        threads.emplace_back([i]{
+            for(int j = 0; j < 3; j++)
+              printf("%d\n", i);
+        });
+    }
+    std::for_each(threads.begin(), threads.end(), std::mem_fn(&std::thread::join));
+    return 0;
+}
+```
+这里对每个线程都执行join操作，这里的jion被std::mem_fn包装成一个对象，实际上就是用这个函数指针构造一个__mem_fn([llvm里面的实现](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/functional#L1279))类对象并返回。
 ## std::call_once
 
+## std::invoke
 ## new(size_t, void*)
 
 ## allocator
