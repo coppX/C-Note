@@ -98,7 +98,20 @@ int main() {
 }
 ```
 这里对每个线程都执行join操作，这里的jion被std::mem_fn包装成一个对象，实际上就是用这个函数指针构造一个__mem_fn([llvm里面的实现](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/functional#L1279))类对象并返回。
-## std::call_once
+## std::call_once && std::once_flag
+有的地方需要代码只执行一次，比如说单例初始化， call_once能保证函数在任何情况下只调用一次，call_once需要配合once_flag使用
+```cc
+Task* Task::getInstance()
+{
+	static std::once_flag flag;
+	std::call_once(flag, []
+	{
+    //这里的代码在多线程里也只会被调用一次
+		task = new Task();
+	});
+	return task;
+}
+```
 
 ## std::invoke
 ## new(size_t, void*)
