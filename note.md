@@ -30,7 +30,50 @@
 ## 不可拷贝的对象
 C++标准库中很多资源占用类型,比如IO对象std::ifstream，std::unique_ptr，std::thread, std::future都只可以移动，不能拷贝
 ## std::for_each
-
+先看看llvm中std::for_each源代码的实现
+```cc
+template<class _InputIterator, class _Function>
+inline _LIBCPP_INLINEVISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX17
+_Function for_each(_InputIterator __first, _InputIterator _last_, _Function __f)
+{
+    for (; __first != __last; ++__first)
+        __f(*__first);
+    return __f;
+}
+```
+从代码可以看出来for_each是对迭代器区间[_first,_last)内元素逐个进行__f操作，并且操作完成后返回f,这里的__f是可调用对象，使用例子
+```cc
+#include <vector>
+#include <algorithm>
+#include <iostream>
+ 
+struct Sum
+{
+    void operator()(int n) { sum += n; }
+    int sum{0};
+};
+ 
+int main()
+{
+    std::vector<int> nums{3, 4, 2, 8, 15, 267};
+ 
+    auto print = [](const int& n) { std::cout << " " << n; };
+ 
+    std::cout << "before:";
+    std::for_each(nums.cbegin(), nums.cend(), print);
+    std::cout << '\n';
+ 
+    std::for_each(nums.begin(), nums.end(), [](int &n){ n++; });
+ 
+    // calls Sum::operator() for each number
+    Sum s = std::for_each(nums.begin(), nums.end(), Sum());
+ 
+    std::cout << "after: ";
+    std::for_each(nums.cbegin(), nums.cend(), print);
+    std::cout << '\n';
+    std::cout << "sum: " << s.sum << '\n';
+}
+```
 ## std::mem_fn
 
 ## std::call_once
@@ -250,7 +293,7 @@ if (p)
         p = nullptr;
     } while(0)
 else
-    p = 0;
+    p = nullptr;
 ```
 使用第二种写法展开:
 ```cc
