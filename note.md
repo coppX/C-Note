@@ -103,13 +103,12 @@ int main() {
 ```cc
 Task* Task::getInstance()
 {
-	static std::once_flag flag;
-	std::call_once(flag, []
-	{
-    //这里的代码在多线程里也只会被调用一次
-		task = new Task();
-	});
-	return task;
+    static std::once_flag flag;
+    std::call_once(flag, []{
+        //这里的代码在多线程里也只会被调用一次
+        task = new Task();
+    });
+    return task;
 }
 ```
 
@@ -295,7 +294,7 @@ std::floor(5.88)//5
 std::log2(65536)//16
 ```
 
-## #pragma unroll/nounroll/pack
+## #pragma unroll/nounroll/pack/comment
 
 ## constexpr
 
