@@ -42,14 +42,15 @@ class complex {
   double re, im;
 
   // "friend"s can use private members
-  // objects in the same class were "friend"s
+  // objects in the same class are "friend"s
   friend complex&
   __doapl (complex*, const complex&);
 };
 
-// all operations could be designed to global functions
-//   or member functions, there is not a last word says
-//   which one is better, it depends on circumstances
+// almost all operations could be designed to global
+//   functions or member functions, there is not
+//   a last word says which one is better,
+//   it depends on circumstances
 
 // global function
 inline complex&
@@ -148,4 +149,4 @@ operator << (std::ostream& os, const complex& x) {
 //   to ODR violations (line 132)
 
 // a simple class without pointers,
-//   code & note by undr22 in Feb 24th, 2021
+//   code & note by Shen in Feb 24th, 2021
