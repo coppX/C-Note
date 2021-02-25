@@ -74,6 +74,8 @@ real (const complex& x) {return x.real();}
 inline double
 imag (const complex& x) {return x.imag();}
 
+// operator + can not be a member function,
+//   for the situation double+complex
 inline complex
 operator + (const complex& x, const complex& y) {
   // typename() to create temp object
@@ -129,6 +131,7 @@ conj (const complex& x) {
 }
 
 // operator << must be global
+// see line 77
 std::ostream&
 operator << (std::ostream& os, const complex& x) {
   return os << '(' << real(x) << ',' << imag(x) << ')';
@@ -146,7 +149,7 @@ operator << (std::ostream& os, const complex& x) {
 
 // ATTENTION!
 // 1, function definitions in header files may lead
-//   to ODR violations (line 132)
+//   to ODR violations (line 136)
 
 // a simple class without pointers,
 //   code & note by undr22 in Feb 24th, 2021

@@ -11,7 +11,8 @@ class String {
   // copy constructor
   String (const String& str);
   // copy assignment operator, or copy op =
-  String& operator = (const String& str);
+  String&
+  operator = (const String& str);
   // destructor, or dtor
   ~String();
 
@@ -66,6 +67,14 @@ operator << (std::ostream& os, const String& str) {
 }
 
 #endif
+
+// Notice:
+// 1, always consider returning by ref
+// 2, always consider write const functions
+// 3, always remember to release memory,
+//   use paired new/delete or new[]/delete[] operators
+// 4, always consider writing inline functions
+// 5, CHECK SELF ASSIGNMENT in copy assignment operator
 
 // Attention!
 // 1, function definitions in header files may lead
