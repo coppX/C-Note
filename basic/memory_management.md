@@ -112,7 +112,7 @@ Notice that the operator delete, like the operator new, is a special function. T
 
 ![](images/2021-02-25-222217_673x485_scrot.png)
 
-Cookies are used to record the size of memory blocks, pad for, just paddinng, for the size of memory blocks must be a multiple to 16.
+Cookies are used to record the size of memory blocks, pad for, just paddinng, for the size of memory blocks must be a multiple of 16.
 
 > Cookie: Why 00000041?
 > 
