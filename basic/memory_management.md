@@ -104,7 +104,7 @@ String::~String(ps);
 operator delete(ps);
 ```
 
-Notice that the operator delete, like the operator new, is a special function.The operator delete calls free() to release memory.
+Notice that the operator delete, like the operator new, is a special function. The operator delete calls free() to release memory.
 
 ### memory blocks that allocated automatically, in VC
 
@@ -112,7 +112,7 @@ Notice that the operator delete, like the operator new, is a special function.Th
 
 ![](images/2021-02-25-222217_673x485_scrot.png)
 
-Cookie used to record the size of memory blocks, pad for, just paddinng, for the size of memory blocks must be a multiple to 16.
+Cookies are used to record the size of memory blocks, pad for, just paddinng, for the size of memory blocks must be a multiple to 16.
 
 > Cookie: Why 00000041?
 > 
@@ -129,14 +129,14 @@ delete [] ps; // $5
 
 ![](images/2021-02-25-222234_592x566_scrot.png)
 
-> VC adds an integer to record the count of items in arrays (3 in immage).
+> VC adds an integer to record the count of items in arrays (3 in image).
 
-memory allocated by new [] must be released by delete [], or may cause memory leak.
+Memory allocated by new [] must be released by delete [], or may cause memory leak.
 
 delete [] in line $4 calls destructor 3 times to destruct 3 Complex objects in array, then the complier will release the memory that the array took up.
 
 Same behaviour the delete [] will cause in line $5, but if we replaced delete [] by delete:
 
-The complier will only call destructor on time, which means the "the-pointer-in-the-first-String-object-ponited-at" thing will be released correctly, but the second and the third one will not. After the complier released the array, we wouldn't be able to relase that two things, this causes memory leak.
+The complier will only call destructor one time, which means the "the-pointer-in-the-first-String-object-ponited-at" thing will be released correctly, but the second and the third one will not. After the complier released the array, we wouldn't be able to release that two things, this causes memory leak.
 
 Sure this affects nothing to the Complex array. But we should keep this habit: Use delete [] to relase memory allocated by new [].
