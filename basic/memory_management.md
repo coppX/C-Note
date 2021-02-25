@@ -110,7 +110,7 @@ Notice that the operator delete, like the operator new, is a special function.Th
 
 ##### for objects:
 
-![](../notes/images/2021-02-25-222217_673x485_scrot.png)
+![](images/2021-02-25-222217_673x485_scrot.png)
 
 Cookie used to record the size of memory blocks, pad for, just paddinng, for the size of memory blocks must be a multiple to 16.
 
@@ -127,7 +127,7 @@ delete [] pc; // $4
 delete [] ps; // $5
 ```
 
-![](../notes/images/2021-02-25-222234_592x566_scrot.png)
+![](images/2021-02-25-222234_592x566_scrot.png)
 
 > VC adds an integer to record the count of items in arrays (3 in immage).
 
