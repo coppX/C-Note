@@ -14,12 +14,12 @@ class complex {
   // 4, could be overloaded, but could only exists ONE
   //   or zero default ctor (default ctor: ctors do not
   //   need provided arguments)
-  // 5, could be private, see "Singleton design pattern"
+  // 5, could be private, see ./singleton.cpp
   complex (double r=0, double i=0) : re(r), im(i) {}
 
   // functions defined in class body will be "inline"
-  // keyword "inline" only SUGGESTS complier to make the
-  //   function inline, inline or not depends on complier
+  // keyword "inline" only SUGGESTS compiler to make the
+  //   function inline, inline or not depends on compiler
 
   // better passing by ref(erence) (to const)
   // return by value or ref depends on circumstances

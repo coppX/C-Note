@@ -1,6 +1,6 @@
 # Memory Management in C++
 
-See the complete codes in ./code folder.
+See complete codes in [complex.h](./code/complex.h) and [string.h](./code/string.h).
 
 ### About stack and heap
 
@@ -66,7 +66,7 @@ class Complex {
 Complex* pc = new Complex(1, 2); // $2
 ```
 
-The complier will turn the $2 line into (not accurate, only indicative):
+The compiler will turn the $2 line into (not accurate, only indicative):
 
 ```cpp
 Complex* pc; // $2-0
@@ -97,7 +97,7 @@ String* ps = new String("Hello");
 delete ps; // $3
 ```
 
-The complier devide line $3 to two steps:
+The compiler devide line $3 to two steps:
 
 ```cpp
 String::~String(ps);
@@ -133,10 +133,12 @@ delete [] ps; // $5
 
 Memory allocated by new [] must be released by delete [], or may cause memory leak.
 
-delete [] in line $4 calls destructor 3 times to destruct 3 Complex objects in array, then the complier will release the memory that the array took up.
+delete [] in line $4 calls destructor 3 times to destruct 3 Complex objects in array, then the compiler will release the memory that the array took up.
 
 Same behaviour the delete [] will cause in line $5, but if we replaced delete [] by delete:
 
-The complier will only call destructor one time, which means the "the-pointer-in-the-first-String-object-ponited-at" thing will be released correctly, but the second and the third one will not. After the complier released the array, we wouldn't be able to release that two things, this causes memory leak.
+The compiler will only call destructor one time, which means the "the-pointer-in-the-first-String-object-ponited-at" thing will be released correctly, but the second and the third one will not. After the compiler released the array, we wouldn't be able to release that two things, this causes memory leak.
 
 Sure this affects nothing to the Complex array. But we should keep this habit: Use delete [] to relase memory allocated by new [].
+
+[Next->](./02_static_members.md)
