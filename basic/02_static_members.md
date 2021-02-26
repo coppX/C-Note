@@ -93,4 +93,4 @@ class President {
 };
 ```
 
-See the complete code and comments in [singleton.cpp](./code/singleton.cpp).
+See the complete code and comments in [singleton.cpp](./codes/singleton.cpp).

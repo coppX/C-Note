@@ -1,6 +1,6 @@
 # Memory Management in C++
 
-See complete codes in [complex.h](./code/complex.h) and [string.h](./code/string.h).
+See complete codes in [complex.h](./codes/complex.h) and [string.h](./codes/string.h).
 
 ### About stack and heap
 
