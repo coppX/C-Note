@@ -74,7 +74,27 @@ void g(Args ... args) {
 TODO  
 ## std::decay && std::decay_t
 ## std::common_type && std::common_type_t
+## std::is_same
 ## std::enable_if
+## 折叠表达式
+## 推导指引
+## 类型萃取
+## 泛型lambda(C++14起)
+C++14引入泛型lambda，是一种成员模板的简化。
+```cc
+auto lambda = [](auto x, auto y){return x + y;};
+```
+编译器会默认为它构造下面一个类:
+```cc
+class SomeCompilerSpecificName {
+    public:
+    SomeCompilerSpecificName();//constructor only called by compiler
+    template<typename T1, template T2>
+    auto operator() (T1 x, T2 y) const {//这里的auto是C++14新增的让编译器推断具体的返回类型
+        return x + y;
+    }
+}
+```
 
 ## SFINAE(Substitution Failure Is Not An Error,即匹配失败不是错误)
 
