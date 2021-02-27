@@ -96,5 +96,77 @@ class SomeCompilerSpecificName {
 }
 ```
 
+## 模板的模板参数(Template Template Parameter)
+用模板的模板参数，能做到只指定容器类型而不需要指定元素类型
+```cc
+Stack<int, std::vector<int>> s
+//通过模板的模板参数可以写为
+Stack<int, std::vector> s;
+```
+为此必须把第二个模板参数指定为模板的模板参数
+```cc
+template<typanem T,
+    template<typename Elem> class Cont = std::deque>
+class Stack {
+private:
+    Cont<T> elems;
+public:
+    void push(T const&);
+    void pop();
+    T const& top() const;
+    bool empty() const {
+        return elems.empty();
+    }
+};
+```
+第二个模板参数是一个类模板，而且它会被第一个模板参数实例化:
+```cc
+Cont<T> elems;//模板类被第一个参数实例化
+```
+因为Cont没有用到模板参数Elem，所以可以省略Elem
+```cc
+template<typename T,
+    template<typename> class Cont = std::deque>
+```
+对于模板的模板参数Cont, C++11之前只能用class关键字修饰, C++11之后可以用别名模板的名称来替代，C++17中可以用typename修饰
+```cc
+//since C++17
+template<typename T,
+    template<typename> typename Cont = std::deque>
+class Stack {
+private:
+    Cont<T> v;
+}
+```
+由于默认的std::deque和Cont的参数不匹配，所以可以将代码定义成这样:
+```cc
+template<typename T, template<typename Elem,
+    typename Alloc = std::allocator<Elem>> class Cont = std::deque>
+class Stack {
+    ...
+};
+```
+这里的Alloc没有用到也可以省略
+```cc
+template<typename T, template<typename Elem,
+    typename = std::allocator<Elem>> class Cont = std::deque>
+class Stack {
+private:
+    Cont<T> elems;
+public:
+    void push(T const&);
+    void pop();
+    T const& top() const;
+    bool empty const() {
+      return elems.empty();
+    }
+};
+
+template<typename T, typelate<typename, typename>class Cont>
+void Stack<T, Cont>::push(T const& elem){
+    elems.push_back(elem);
+}
+...
+```
 ## SFINAE(Substitution Failure Is Not An Error,即匹配失败不是错误)
 
