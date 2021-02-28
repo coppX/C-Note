@@ -190,12 +190,12 @@ void foo(){
 否则，这个函数模板会被忽略掉。如果我们给std::enable_if<>传递第二个参数:
 ```cc
 template<typename T>
-typename std::enbale_if<(sizeof(T) > 4), T>::type
+typename std::enable_if<(sizeof(T) > 4), T>::type
 foo() {
     return T();
 }
 ```
-当sizeof(T) > 4满足时，std::enbale_if会被扩展成第二个模板参数。
+当sizeof(T) > 4满足时，std::enable_if会被扩展成第二个模板参数。
 ```cc
 template<typename T>
 T foo() {
