@@ -71,8 +71,26 @@ void g(Args ... args) {
   cout << sizeof...(args) <<endl;   //函数参数的数目
 }
 ```
-TODO  
-## std::decay && std::decay_t
+## std::decay类型退化
+在向模板传递模板参数的过程中，如果是按值传递参数，那么参数类型就好退化(decay)。也就是说，裸数组(raw array)和函数会退化成相应的指针， cv限制(const和volatile)会被删除。
+```cc
+template<typename T>
+void printV(T arg){
+    ...
+}
+std::string const c = "hi";
+printV(c);//T为std::string，顶层const删除
+printV("hi");//T为char const*，字符数组char const[3]退化成指针char const*
+int arr[4];
+printV(arr);//T为int *, int [4]退化成int*
+```
+虽然按引用传递的方式不会造成退化(decay)，但是并不是在所有情况下都能使用按引用传递，即使在能使用的地方，有时候被推断出来的模板参数类型也会带来不少问题。
+使用std::decay用来得到退化的类型，libcxx中的decay[实现点击查看](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/type_traits#L1351)
+```cc
+template<class T>
+using decay_t = typename dacay<T>::type;// C++ 14新增
+```
+可以使用decay_t<T>来简化写法
 ## std::common_type && std::common_type_t
 ## std::is_same
 ## 折叠表达式
