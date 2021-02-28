@@ -75,10 +75,9 @@ TODO
 ## std::decay && std::decay_t
 ## std::common_type && std::common_type_t
 ## std::is_same
-## std::enable_if
 ## 折叠表达式
 ## 推导指引
-## 类型萃取
+## 类型萃取(type trait)
 ## 泛型lambda(C++14起)
 C++14引入泛型lambda，是一种成员模板的简化。
 ```cc
@@ -87,7 +86,7 @@ auto lambda = [](auto x, auto y){return x + y;};
 编译器会默认为它构造下面一个类:
 ```cc
 class SomeCompilerSpecificName {
-    public:
+public:
     SomeCompilerSpecificName();//constructor only called by compiler
     template<typename T1, template T2>
     auto operator() (T1 x, T2 y) const {//这里的auto是C++14新增的让编译器推断具体的返回类型
@@ -168,5 +167,55 @@ void Stack<T, Cont>::push(T const& elem){
 }
 ...
 ```
-## SFINAE(Substitution Failure Is Not An Error,即匹配失败不是错误)
+## std::enable_if
+使用std::enable_if，可以在某些条件下禁用函数模板。std::enable_if<>是一种类型萃取(type trait)，他会根据一个作为其(第一个)模板参数的编译期表达式决定其行为:
+- 如果这个表达式结果为true，它的type成员会返回一个类型:  
+1. 如果没有第二个模板参数，返回类型是void。
+2. 否则，返回类型是其第二个参数的类型。
+- 如果表达式结果是false，则其成员类型是未定义的。更加模板的一个叫做SFINAE的规则，这会导致包含std::enalbe_if<>表达式的函数模板被忽略掉。
+```cc
+template<typname T>
+typename std::enable_if<(sizeof(T) > 4)>::type
+foo(){
+    ...
+}
+```
+如果sizeof(T)>4成立，函数模板会被展开成
+```cc
+template<typename T>
+void foo(){
+    ...
+}
+```
+否则，这个函数模板会被忽略掉。如果我们给std::enable_if<>传递第二个参数:
+```cc
+template<typename T>
+typename std::enbale_if<(sizeof(T) > 4), T>::type
+foo() {
+    return T();
+}
+```
+当sizeof(T) > 4满足时，std::enbale_if会被扩展成第二个模板参数。
+```cc
+template<typename T>
+T foo() {
+    return T();
+}
+```
+但是由于将enable_if表达式放在声明的中间不是一个明智的做法，因此使用std::enable_if<>的更常见的方法是使用一个额外的、有默认值的模板参数:
+```cc
+template<typename T, typename = std::enable_if_t<(sizeof(T) > 4)>>
+void foo() {
+
+}
+```
+如果sizeof(T) > 4，它会被展开成:
+```cc
+template<typename T, typename = void>
+void foo() {
+
+}
+```
+由于从C++14开始所有模板萃取都返回一个类型，因此可以使用一个与之对应的别名模板std::enable_if_t<>，这样就可以省略掉template和::type了。
+## SFINAE(Substitution Failure Is Not An Error,即替换失败不是错误)
 
