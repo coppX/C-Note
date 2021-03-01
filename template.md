@@ -93,6 +93,20 @@ using decay_t = typename dacay<T>::type;// C++ 14新增
 可以使用decay_t<T>来简化写法
 ## std::common_type && std::common_type_t
 ## std::is_same
+```cc
+template<typename T, typename U>
+struct is_same;
+//下面是C++17新增
+template<typename T, typename U>
+inline constexpr bool is_same_v = is_same<T, U>::value;
+```
+std::is_same用于比较两个类型T和U是不是同一类型，如果是，则内部value为true,这里的T和U会严格比较，包括cv限制。如果用std::decay可以退化掉T和U的类型，然后进行比较，可以判断这两个类型是否是同一类型或者是否能相互转化。
+```cc
+std::is_same<int, int&>::value; //false
+std::is_same_v<int, int&>; //false,C++17用法
+std::is_same_v<int, std::decay<int&>>; //true
+std::is_same_v<int, std::decay<const int&>>; //true
+```
 ## 折叠表达式
 ## 推导指引
 ## 类型萃取(type trait)
