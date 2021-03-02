@@ -15,7 +15,7 @@ class complex {
 }
 
 complex c1, c2;
-cout << c1.real(); // S2-1
+cout << c1.real(); // $2-1
 cout << c2.real();
 // cout << complex::real(&c1); // $2-2
 // cout << complex::real(&c2);
@@ -94,3 +94,5 @@ class President {
 ```
 
 See the complete code and comments in [singleton.cpp](./codes/singleton.cpp).
+
+[Next->](./03_OOP_basic.md)
