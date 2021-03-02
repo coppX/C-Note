@@ -27,7 +27,9 @@ Composition means "has-a", like code shows above, queue "has-a" Sequence, or deq
 
 Class queue doesn't write member functions itself, but call deque\<T\>'s member functions instead. This exapmle could also be called as a "Adapter design pattern".
 
+```
 Container ◆---> Component
+```
 
 For composition relationships, construction is from inside to outside: Container's ctor calls component's default ctor, then execute itself:
 
@@ -76,7 +78,9 @@ String::String () { ... }
 ...
 ```
 
+```
 String ◇---> StringRep
+```
 
 String as an interface, delegate StringRep to do everything, for the pointer could point to other implementation class, or we could modify the implementation class, but not exert an influence on the interface.
 
@@ -98,13 +102,12 @@ struct _List_node : public _List_node_base {
 
 Inheritance, means "is-a", like cat "is-a" animal, or \_List\_node is a \_List\_node\_base.
 
-Base
-
-△
-
-|
-
+```
+ Base
+  △
+  |
 Derived
+```
 
 > The dtor of base class must be virtual, or there will be ubdefined behaviors.
 
@@ -212,13 +215,12 @@ class Observer {
 };
 ```
 
+```
 Subject ◇---> Observer
-
                  △
-
                  |
-
                 ...
+```
 
 An imperfect Composite design pattern:
 
@@ -247,14 +249,11 @@ class Composite : public Component {
 };
 ```
 
+```
       Component <-----------
-
           △                |
-
           |                |
-
     --------------         |
-
     |            |         |
-
 Primitive    Composite ◇----
+```
