@@ -72,7 +72,7 @@ void g(Args ... args) {
 }
 ```
 ## std::decay类型退化
-在向模板传递模板参数的过程中，如果是按值传递参数，那么参数类型就好退化(decay)。也就是说，裸数组(raw array)和函数会退化成相应的指针， cv限制(const和volatile)会被删除。
+在向模板传递模板参数的过程中，如果是按值传递参数，那么参数类型就会退化(decay)。也就是说，裸数组(raw array)和函数会退化成相应的指针， cv限制(const和volatile)会被删除。
 ```cc
 template<typename T>
 void printV(T arg){
@@ -84,7 +84,17 @@ printV("hi");//T为char const*，字符数组char const[3]退化成指针char co
 int arr[4];
 printV(arr);//T为int *, int [4]退化成int*
 ```
-虽然按引用传递的方式不会造成退化(decay)，但是并不是在所有情况下都能使用按引用传递，即使在能使用的地方，有时候被推断出来的模板参数类型也会带来不少问题。
+虽然按引用传递的方式不会造成退化(decay)，但是并不是在所有情况下都能使用按引用传递，即使在能使用的地方，有时候被推断出来的模板参数类型也会带来不少问题。  
+这两种情况各有其优缺点，将数组退化成指针，就不能区分它是指向对象的指针还是一个被传递进来的数组。另一方面，如果被传进来的是字符串常量，那么类型不退化的话就会带来问题，因为不同长度的字符串的类型是不同的。比如
+```
+template<typename T>
+void foo(T const& arg1, T const& arg2){
+    ...
+}
+foo("hi", "guy")；
+```
+因为字符串常量"hi"的类型是char const [3], 而"guy"的类型是char const [4]，但是这里的函数模板参数要求是类型相同，所以会有编译问题。  
+退化在很多情况下是有帮助的，尤其是在需要验证两个对象是否有相同的类型或者可以转换成相同的类型(std::is_same)的时候。  
 使用std::decay用来得到退化的类型，libcxx中的decay[实现点击查看](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/type_traits#L1351)
 ```cc
 template<class T>
