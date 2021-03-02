@@ -34,13 +34,13 @@ Container ◆---> Component
 For composition relationships, construction is from inside to outside: Container's ctor calls component's default ctor, then execute itself:
 
 ```cpp
-Container::Container(...) : Component() { ... };
+Container::Container(...) : Component() { ... }
 ```
 
 Destruction is from ouside to inside: Container's dtor execute itself, then calls component's dtor:
 
 ```cpp
-Container::~Container(...) { ... ~Component() };
+Container::~Container(...) { ... ~Component(); }
 ```
 
 ### delegation : composition by reference
@@ -109,19 +109,19 @@ Inheritance, means "is-a", like cat "is-a" animal, or \_List\_node is a \_List\_
 Derived
 ```
 
-> The dtor of base class must be virtual, or there will be ubdefined behaviors.
+> The dtor of base class must be virtual, or there will be undefined behaviors.
 
 
 For inheritance relationships, construction is from inside to outside: Derived class's ctor calls base class's default ctor, then execute itself:
 
 ```cpp
-Derived::Derived(...) : Base() { ... };
+Derived::Derived(...) : Base() { ... }
 ```
 
 Destruction is from ouside to inside: Derived class's dtor execute itself, then calls base class's dtor:
 
 ```cpp
-Derived::~Derived(...) { ... ~Base() };
+Derived::~Derived(...) { ... ~Base(); }
 ```
 
 ### inheritance with virtual functions
