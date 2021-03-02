@@ -188,7 +188,7 @@ int main() {
 }
 ```
 
-### Delegation & Inheritance
+### delegation & inheritance
 
 An imperfect Observer design pattern:
 
