@@ -297,7 +297,7 @@ std::log2(65536)//16
 ## #pragma unroll/nounroll/pack/comment
 
 ## constexpr
-
+constexpr是C++11引入用于简化各种类型的编译器计算，constexpr函数可以在编译期完成相应的计算，但是C++11版本的constexpr函数通常只能包含一个return语句。这个限制在C++14中被移除了，可以使用常规C++代码中大部分控制结构。
 ## nonexcept & nothrow
 
 ## extern "C" && #ifdef __cplusplus

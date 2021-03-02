@@ -261,7 +261,7 @@ void foo() {
 由于从C++14开始所有模板萃取都返回一个类型，因此可以使用一个与之对应的别名模板std::enable_if_t<>，这样就可以省略掉template和::type了。
 
 ## if constexpr (C++17)
-if constexpr(...)是C++17引入的可以在编译期基于某些条件禁用或启用相应模板的编译器语句。
+if constexpr(...)是C++17引入的可以在编译期基于某些条件禁用或启用相应代码的编译期语句。
 ```cc
 template<typename T, typename... Types>
 void print(T const& firstArg, Types const&... args) {
@@ -271,6 +271,6 @@ void print(T const& firstArg, Types const&... args) {
     }
 }
 ```
-如果args...就是一个空的参数包，此时sizeof...(args)等于0,if语句里面的代码就会在编译期实例化print函数的时候丢掉。
+如果args...就是一个空的参数包，此时sizeof...(args)等于0,if语句里面的代码就会在编译期实例化print模板函数的时候丢掉。当然，if constexpr并不仅限于模板函数，可以用于任意类型的函数。
 ## SFINAE(Substitution Failure Is Not An Error,即替换失败不是错误)
 
