@@ -60,7 +60,7 @@ memory_order_seq_cst有此内存顺序的加载操作进行获得操作，存储
 ### 获取-释放序
 ### 自由序
 ## std::thread
-thread是C++线程类，libcxx中[std::thread](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/thread#L216)的定义如下:
+thread是C++线程类，类thread表示单个执行线程，线程允许多个函数同时执行。libcxx中[std::thread](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/thread#L216)的定义如下:
 ```cc
 class _LIBCPP_TYPE_VIS thread {
     __libcpp_thread_t __t_;
@@ -100,7 +100,7 @@ public:
 f表示线程的入口程序，args表示传给f的参数。当新的std::thread对象被构造，并且和入口程序关联后。新的线程就开始执行。
 ```cc
 //线程内部的入口函数调用逻辑
-std::invoke(decay_copy(std::forward<Function>(f)), decay_copy(std::forward<Args>(args))...);
+std::invoke(decay_copy(std::forward<_Fp>(__f)), decay_copy(std::forward<_Args>(__args))...);
 ```
 注意:
 - 线程只能移动，不能拷贝。
@@ -133,7 +133,8 @@ int main() {
     std::thread tt(func1, 20);
     cout << "当前线程ID " << tt.get_id() << endl;
     cout << "当前CPU硬件并发核心数 " << std::thread::hardware_concurrency() << endl;
-    auto handle = tt.native_handle();// 类unix操作系统下handle 可用于 pthread 相关操作
+    // 类unix操作系统下handle 可用于 pthread 相关操作,handle就是操作系统级别的线程句柄，类unix下就是线程描述符phtread_t(windows俺也不懂)
+    auto handle = tt.native_handle();
 
     if (tt.joinable()) { // 检查线程可否被join
         tt.join();
