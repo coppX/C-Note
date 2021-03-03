@@ -257,3 +257,5 @@ class Composite : public Component {
     |            |         |
 Primitive    Composite ◇----
 ```
+
+[Next->](./04_conversion_functions_and_explicit.md)
