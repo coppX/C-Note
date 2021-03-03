@@ -282,8 +282,6 @@ int main()
 ### alignment_of
 alignment_of是对alignof进行了封装，alignment_of类里面包含alignof类型的value，可以通过()获取，即`alignment_of<int>()`
 
-## 分支预测
-
 ## 数学操作函数
 `std::ceil(arg)`表示对arg向上取整  
 `std::floor(arg)`表示对arg向下取整  
@@ -294,53 +292,15 @@ std::floor(5.88)//5
 std::log2(65536)//16
 ```
 
-## #pragma unroll/nounroll/pack/comment
-
 ## constexpr
-
+constexpr是C++11引入用于简化各种类型的编译器计算，可以用来修饰变量和函数。constexpr函数可以在编译期完成相应的计算，但是C++11版本的constexpr函数通常只能包含一个return语句。这个限制在C++14中被移除了，可以使用常规C++代码中大部分控制结构。  
+constexpr指定变量或者函数的值,constexpr用于变量时，变量不可以被修改，这点类似于const，和const不同的是，constexpr可以用于函数和类的构造函数，表示值，返回值都是const的，并且如果可能他们将在编译期间被计算。由于constexpr在编译期就进行了计算，所以编译期可以对constexpr修饰的对象进行优化，这点const也是做不到的。
 ## nonexcept & nothrow
-
-## extern "C" && #ifdef __cplusplus
 
 ## weak_ptr
 
 
 ## enum class
-## do{}while(0)
-这是个用于宏的语法技巧，举个例子
-```cc
-#define SAFA_FREE(p) do{delete(p); p=nullptr;}while(0)
-```
-这里的do{}while(0)的作用就是为了把代码块里面的语句当做一个整体。如果不用这种技巧，则变成了
-```cc
-#define SAFA_FREE(p) delete(p); p = nllptr;
-```
-看以下代码就能区分这两种写法的区别了:
-```cc
-if (p)
-    SAFE_FREE(p)
-else
-    p = nullptr;
-```
-使用第一种写法展开:
-```cc
-if (p)
-    do{
-        delete(p);
-        p = nullptr;
-    } while(0)
-else
-    p = nullptr;
-```
-使用第二种写法展开:
-```cc
-if (p)
-    delete(p);
-    p = nullptr;
-else
-    p = nullptr;
-```
-第一种写法中do while循环先执行一次，判断while(0)时结束循环，代码块只会被执行一次，第二种写法就会出现问题，编译都会失败。
 ## unique_ptr && shared_ptr删除器
 ```cc
 template<class T, class Deleter = std::default_delete<T>> class unique_ptr;
