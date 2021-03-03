@@ -294,14 +294,10 @@ std::floor(5.88)//5
 std::log2(65536)//16
 ```
 
-## #pragma unroll/nounroll/pack/comment
-
 ## constexpr
 constexpr是C++11引入用于简化各种类型的编译器计算，可以用来修饰变量和函数。constexpr函数可以在编译期完成相应的计算，但是C++11版本的constexpr函数通常只能包含一个return语句。这个限制在C++14中被移除了，可以使用常规C++代码中大部分控制结构。  
 constexpr指定变量或者函数的值,constexpr用于变量时，变量不可以被修改，这点类似于const，和const不同的是，constexpr可以用于函数和类的构造函数，表示值，返回值都是const的，并且如果可能他们将在编译期间被计算。由于constexpr在编译期就进行了计算，所以编译期可以对constexpr修饰的对象进行优化，这点const也是做不到的。
 ## nonexcept & nothrow
-
-## extern "C" && #ifdef __cplusplus
 
 ## weak_ptr
 
