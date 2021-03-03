@@ -108,6 +108,8 @@ Notice that the operator delete, like the operator new, is a special function. T
 
 ### memory blocks that allocated automatically, in VC
 
+> A double value takes 8 bytes in common, 4 bytes here for simple (lazy to correct).
+
 ##### for objects:
 
 ![](images/2021-02-25-222217_673x485_scrot.png)

@@ -91,7 +91,7 @@ Or this is called a "compile firewall", for the interface could be compiled only
 ```cpp
 struct _List_node_base {
   _List_node_base* _M_next;
-  _List_node_base* -M_prev;
+  _List_node_base* _M_prev;
 };
 
 template<typename _Tp>

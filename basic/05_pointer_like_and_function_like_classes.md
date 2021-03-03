@@ -46,7 +46,7 @@ struct __list_node {
   T data;
 };
 
-template<class T, class ref, class Ptr>
+template<class T, class Ref, class Ptr>
 struct __list_iterator {
   typedef __list_iterator<T, Ref, Ptr> self;
   typedef Ptr pointer;
