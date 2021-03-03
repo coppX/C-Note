@@ -133,7 +133,7 @@ int main() {
     std::thread tt(func1, 20);
     cout << "当前线程ID " << tt.get_id() << endl;
     cout << "当前CPU硬件并发核心数 " << std::thread::hardware_concurrency() << endl;
-    // 类unix操作系统下handle 可用于 pthread 相关操作,handle就是操作系统级别的线程句柄，类unix下就是线程描述符phtread_t(windows俺也不懂)
+    // 类unix操作系统下handle 可用于 pthread 相关操作,handle就是操作系统级别的线程句柄，类unix下就是线程描述符pthread_t(windows俺也不懂)
     auto handle = tt.native_handle();
 
     if (tt.joinable()) { // 检查线程可否被join
