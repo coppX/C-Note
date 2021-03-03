@@ -12,6 +12,8 @@ Summary:
 
 [04. conversion functions and "explicit"](./04_conversion_functions_and_explicit.md)
 
+[05. pointer-like and function-like classes.md](./05_pointer_like_and_function_like_classes.md)
+
 ---
 
 Code & note by undr22.

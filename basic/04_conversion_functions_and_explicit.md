@@ -166,3 +166,5 @@ struct __bit_reference {
 ```
 
 The operator [] in line $3 should have returned a bool value, but a "reference" instead (see proxy design pattern), so there must be a conversion function to converse "reference" objects to bool values (line $4).
+
+[Next->](./05_pointer_like_and_function_like_classes.md)
