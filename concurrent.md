@@ -444,7 +444,7 @@ int main ()
 ```
 ### std::recursive_timed_mutex
 std::recursive_timed_mutex在std::recursive_mutex的基本互斥和同步基础上支持超时机制，std::timed_mutex类型新增try_lock_for和try_lock_until成员函数，可以在一段时间内尝试获取量或者在指定时间点之前获取互斥量上锁。
-```
+```cc
 class _LIBCPP_TYPE_VIS recursive_timed_mutex
 {
     mutex              __m_;
