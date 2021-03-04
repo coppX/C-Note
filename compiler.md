@@ -71,3 +71,16 @@ assert的行为依赖于一个名为NDEBUG的预处理变量，如果定义了ND
 // other os
 #endif
 ```
+
+## compiler check
+```cc
+#if defined(__clang__) || defined(__GNUC__)
+
+	#define CPP_STANDARD __cplusplus
+	
+#elif defined(_MSC_VER)
+
+	#define CPP_STANDARD _MSVC_LANG
+	
+#endif
+```
