@@ -84,3 +84,20 @@ assert的行为依赖于一个名为NDEBUG的预处理变量，如果定义了ND
 	
 #endif
 ```
+
+## C++ version check
+```cc
+//CPP_STANDARD的定义参考上面的compiler check
+#if CPP_STANDARD >= 199711L     //C++03以下
+	#define HAS_CPP_03 1
+#endif
+#if CPP_STANDARD >= 201103L     //C++11
+	#define HAS_CPP_11 1
+#endif
+#if CPP_STANDARD >= 201402L     //C++14
+	#define HAS_CPP_14 1
+#endif
+#if CPP_STANDARD >= 201703L     //C++17
+	#define HAS_CPP_17 1
+#endif
+```
