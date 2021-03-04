@@ -144,7 +144,77 @@ int main() {
 }
 ```
 
+## std::this_thread
+this_thread并不是一个类型，而是一个命名空间，包含一系列访问当前调用者线程的函数。
+```cc
+namespace this_thread
+{
 
+_LIBCPP_FUNC_VIS void sleep_for(const chrono::nanoseconds& __ns);
+
+template <class _Rep, class _Period>
+void
+sleep_for(const chrono::duration<_Rep, _Period>& __d)
+{
+    using namespace chrono;
+    if (__d > duration<_Rep, _Period>::zero())
+    {
+#if defined(_LIBCPP_COMPILER_GCC) && (__powerpc__ || __POWERPC__)
+    //  GCC's long double const folding is incomplete for IBM128 long doubles.
+        _LIBCPP_CONSTEXPR duration<long double> _Max = nanoseconds::max();
+#else
+        _LIBCPP_CONSTEXPR duration<long double> _Max = duration<long double>(ULLONG_MAX/1000000000ULL) ;
+#endif
+        nanoseconds __ns;
+        if (__d < _Max)
+        {
+            __ns = duration_cast<nanoseconds>(__d);
+            if (__ns < __d)
+                ++__ns;
+        }
+        else
+            __ns = nanoseconds::max();
+        sleep_for(__ns);
+    }
+}
+
+template <class _Clock, class _Duration>
+void
+sleep_until(const chrono::time_point<_Clock, _Duration>& __t)
+{
+    using namespace chrono;
+    mutex __mut;
+    condition_variable __cv;
+    unique_lock<mutex> __lk(__mut);
+    while (_Clock::now() < __t)
+        __cv.wait_until(__lk, __t);
+}
+
+template <class _Duration>
+inline _LIBCPP_INLINE_VISIBILITY
+void
+sleep_until(const chrono::time_point<chrono::steady_clock, _Duration>& __t)
+{
+    using namespace chrono;
+    sleep_for(__t - steady_clock::now());
+}
+
+inline _LIBCPP_INLINE_VISIBILITY
+void yield() _NOEXCEPT {__libcpp_thread_yield();}
+
+inline _LIBCPP_INLINE_VISIBILITY
+__thread_id
+get_id() _NOEXCEPT
+{
+    return __libcpp_thread_get_current_id();
+}
+
+}  // this_thread
+```
+- get_id获取当前线程id。
+- yield当前线程放弃CPU占有权，允许其他线程运行，该线程回到准备状态，重新分配资源。调用该方法后，可能执行其他线程，也可能还是执行该线程，这个完全依赖具体操作系统的线程调度机制的实现和当前的系统状态。libcxx实现下yield内部是shed_yield()，sched_yield()这个函数可以使用另一个级别等于或高于当前线程的线程先运行。如果没有符合条件的线程，那么这个函数将会立刻返回然后继续执行当前线程的程序。有策略的调用sched_yield()能在资源竞争情况很严重时，通过给其他的线程或进程运行机会的方式来提升程序的性能。
+- sleep_for阻塞当前线程一段时间。
+- sleep_until阻塞当前线程直到某个时间点。
 ## std::mutex相关
 在多线程程序中经常会出现数据竞争问题，存在数据竞争的程序片段叫做临界区，此时可以用一种叫做互斥量的东西来对资源进行互斥上锁，互斥量同时只允许一个线程持有，持有互斥量的线程就能访问存在数据竞争的临界区。
 ### std::mutex
@@ -428,6 +498,9 @@ recursive_timed_mutex::try_lock_until(const chrono::time_point<_Clock, _Duration
 }
 ```
 std::recursive_timed_mutex和std::recursive_mutex一样具有可重入性，并且和std::timed_mutex一样具有超时性。
+### std::shared_mutex (C++17)
+
+### std::shared_timed_mutex (C++17)
 ## std::lock
 
 ## std::condition_variable
