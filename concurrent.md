@@ -295,7 +295,83 @@ int main()
 ```
 需要注意的一点是对std::recursive_mutex加锁多少次就需要对它进行相应次数的解锁，不然这个线程依旧持有该互斥量。
 ### std::timed_mutex
+std::timed_mutex在std::mutex的基本互斥和同步基础上支持超时机制，std::timed_mutex类型新增try_lock_for和try_lock_until成员函数，可以在一段时间内尝试获取量或者在指定时间点之前获取互斥量上锁。
+```cc
+class _LIBCPP_TYPE_VIS timed_mutex
+{
+    mutex              __m_;
+    condition_variable __cv_;
+    bool               __locked_;
+public:
+     timed_mutex();
+     ~timed_mutex();
 
+private:
+    timed_mutex(const timed_mutex&); // = delete;
+    timed_mutex& operator=(const timed_mutex&); // = delete;
+
+public:
+    void lock();
+    bool try_lock() _NOEXCEPT;
+    template <class _Rep, class _Period>
+        _LIBCPP_INLINE_VISIBILITY
+        bool try_lock_for(const chrono::duration<_Rep, _Period>& __d)
+            {return try_lock_until(chrono::steady_clock::now() + __d);}
+    template <class _Clock, class _Duration>
+        _LIBCPP_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
+        bool try_lock_until(const chrono::time_point<_Clock, _Duration>& __t);
+    void unlock() _NOEXCEPT;
+};
+template <class _Clock, class _Duration>
+bool timed_mutex::try_lock_until(const chrono::time_point<_Clock, _Duration>& __t)
+{
+    using namespace chrono;
+    unique_lock<mutex> __lk(__m_);
+    bool no_timeout = _Clock::now() < __t;
+    while (no_timeout && __locked_)
+        no_timeout = __cv_.wait_until(__lk, __t) == cv_status::no_timeout;
+    if (!__locked_)
+    {
+        __locked_ = true;
+        return true;
+    }
+    return false;
+}
+
+```
+上面代码可以看到超时机制是利用的条件变量的wait_until来对互斥锁进行等待。调用try_lock_for或者try_lock_until的线程都可以在等待时间内对互斥量进行等待，如果在时间内有其他线程释放了该互斥量，那么该线程就会获得对互斥量的锁。如果等待时间结束，那么就会返回false，不再去尝试对互斥量上锁，程序会继续往下执行。  
+使用例子:
+```cc
+#include <iostream>
+#include <chrono>
+#include <thread>
+#include <mutex>
+
+std::timed_mutex mtx;
+
+void fireworks() {
+    // waiting to get a lock: each thread prints "-" every 200ms:
+    while (!mtx.try_lock_for(std::chrono::milliseconds(200))) {
+        std::cout << "-";
+    }
+    // got a lock! - wait for 1s, then this thread prints "*"
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::cout << "*\n";
+    mtx.unlock();
+}
+
+int main ()
+{
+    std::thread threads[10];
+    // spawn 10 threads:
+    for (int i=0; i<10; ++i)
+        threads[i] = std::thread(fireworks);
+
+    for (auto& th : threads) th.join();
+
+    return 0;
+}
+```
 ### std::recursive_timed_mutex
 ## std::lock
 

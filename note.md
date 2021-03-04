@@ -306,3 +306,5 @@ constexpr指定变量或者函数的值,constexpr用于变量时，变量不可�
 template<class T, class Deleter = std::default_delete<T>> class unique_ptr;
 ```
 通过在编译时绑定删除器，unique_ptr避免了间接调用删除器的运行时开销，通过在运行时绑定删除器，shared_ptr使用户重载删除器更为方便。
+
+## voliate && mutable
