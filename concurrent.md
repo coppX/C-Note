@@ -207,7 +207,92 @@ int main() {
 }
 ```
 ### std::recursive_mutex
+现在有这么一种情况:  
+线程1，临界区A，临界区B和互斥量m，其中临界区A和临界区B都需要持有互斥量m(也就是进入临界区之前要执行加锁操作)才能访问。如果线程1访问临界区A，但是临界区A里面的代码对临界区B里面的代码进行了调用。那么就会出现在线程1想进入B的时候没法对m进行加锁操作，就会导致死锁，因为线程1没有释放m，但是线程1又想对m再次加锁。这种情况下，普通的互斥量std::mutex已经不能满足使用了，可以使用std::recursive_mutex来让同一个线程多次上锁。std::recursive_mutex如下:
+```cc
+class _LIBCPP_TYPE_VIS recursive_mutex
+{
+    __libcpp_recursive_mutex_t __m_;
 
+public:
+     recursive_mutex();
+     ~recursive_mutex();
+
+private:
+    recursive_mutex(const recursive_mutex&); // = delete;
+    recursive_mutex& operator=(const recursive_mutex&); // = delete;
+
+public:
+    void lock();
+    bool try_lock() _NOEXCEPT;
+    void unlock()  _NOEXCEPT;
+
+    typedef __libcpp_recursive_mutex_t* native_handle_type;
+
+    _LIBCPP_INLINE_VISIBILITY
+    native_handle_type native_handle() {return &__m_;}
+};
+```
+通过阅读libcxx源代码可以查看到std::mutex和std::recursive_mutex内部系统级别的互斥量描述符都是pthread_mutex_t，而且进行加锁解锁操作都是通过系统级别的pthread_mutex_lock/pthread_mutex_trylock和pthread_mutex_unlock，那么是哪里不一样导致的std::mutex只能上锁一次而std::recursive_mutex却能锁上加锁？其实就是在他们内部的__m_初始化方式不一样，std::mutex是直接通过PTHREAD_MUTEX_INITIALIZER来初始化__m_的，而std::recursive_mutex则是通过一系列操作来为__m_设置额外PTHREAD_MUTEX_RECURSIVE属性。所以std::recursive_mutex具备了锁上加锁的能力。
+```cc
+int __libcpp_recursive_mutex_init(__libcpp_recursive_mutex_t *__m)
+{
+    pthread_mutexattr_t attr;
+    int __ec = pthread_mutexattr_init(&attr);
+    if (__ec)
+        return __ec;
+    //这里为recursive_mutex赋予了递归加锁的能力
+    __ec = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    if (__ec) {
+        pthread_mutexattr_destroy(&attr);
+        return __ec;
+    }
+    __ec = pthread_mutex_init(__m, &attr);
+    if (__ec) {
+        pthread_mutexattr_destroy(&attr);
+        return __ec;
+    }
+    __ec = pthread_mutexattr_destroy(&attr);
+    if (__ec) {
+        pthread_mutex_destroy(__m);
+        return __ec;
+    }
+    return 0;
+}
+```
+使用std::recursive_mutex的例子:
+```cc
+#include <iostream>
+#include <thread>
+#include <mutex>
+ 
+class X {
+    std::recursive_mutex m;
+    std::string shared;
+  public:
+    void fun1() {
+      std::lock_guard<std::recursive_mutex> lk(m);
+      shared = "fun1";
+      std::cout << "in fun1, shared variable is now " << shared << '\n';
+    }
+    void fun2() {
+      std::lock_guard<std::recursive_mutex> lk(m);
+      shared = "fun2";
+      std::cout << "in fun2, shared variable is now " << shared << '\n';
+      fun1(); // recursive lock becomes useful here
+      std::cout << "back in fun2, shared variable is " << shared << '\n';
+    };
+};
+ 
+int main() 
+{
+    X x;
+    std::thread t1(&X::fun1, &x);
+    std::thread t2(&X::fun2, &x);
+    t1.join();
+    t2.join();
+}
+```
 ## std::lock
 
 ## std::condition_variable
