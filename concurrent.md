@@ -3,7 +3,7 @@
 原子操作有两个属性
 - 由于原子操作是不可分的，因此，来自不同线程的同意对象的第二个原子操作只能在第一个原子操作之前或之后获取该对象的状态。
 - 基于其memory_order参数，原子操作可以针对同一个线程中其他原子操作的影响可见性建立排序要求。因此，它会抑制违反排序要求的编译器优化。  
-使用原子操作可以不需要使用互斥锁就能做好数据同步。
+使用原子操作可以不需要使用互斥量就能做好数据同步。
 ## 原子类型
 标准原子类型定义在`<atomic>`中，这些类型的操作都是原子的。
 | 原子类型            |  相关特化类                          |
@@ -26,7 +26,7 @@
 
 表格左边是原子类型，右边表示的是用atomic<T>模板进行特化的，不光可以使用内置类型进行特化，也可以使用自定义类型进行特化。  
 
-标准原子类型不能进行拷贝和赋值，它们没有拷贝构造函数和拷贝赋值运算符。标准原子类型还具有`is_lock_free()`成员函数(`std::atomic_flag`除外)，如果返回`true`表示这个原子类型内部是用原子指令来实现的原子操作，返回`false`表示原子内部是用的互斥锁来模拟的原子操作，具体实现跟类型和编译的目标硬件有关。原子类型支持`load()`、`store()`、`exchange()`、`compare_exchange_weak()`、`compare_exchange_strong()`、`fetch_add()`、`fetch_sub()`、`fetch_and()`、`fetch_or()`、`fetch_xor()`操作
+标准原子类型不能进行拷贝和赋值，它们没有拷贝构造函数和拷贝赋值运算符。标准原子类型还具有`is_lock_free()`成员函数(`std::atomic_flag`除外)，如果返回`true`表示这个原子类型内部是用原子指令来实现的原子操作，返回`false`表示原子内部是用的互斥量来模拟的原子操作，具体实现跟类型和编译的目标硬件有关。原子类型支持`load()`、`store()`、`exchange()`、`compare_exchange_weak()`、`compare_exchange_strong()`、`fetch_add()`、`fetch_sub()`、`fetch_and()`、`fetch_or()`、`fetch_xor()`操作
 ### 原子类型上的操作
 操作分为三类,每种操作都可以选择一个内存序参数，用来指定存储的顺序(如果不选就默认是顺序一致性`memory_order_seq_cst`)
 1. store操作，可选内存序:
@@ -146,30 +146,38 @@ int main() {
 
 
 ## std::mutex相关
-在多线程程序中经常会出现数据竞争问题，存在数据竞争的程序片段叫做临界区，此时可以用一种叫做互斥锁的东西来对资源进行互斥上锁，互斥锁同时只允许一个线程持有，持有互斥锁的线程就能访问存在数据竞争的临界区。
+在多线程程序中经常会出现数据竞争问题，存在数据竞争的程序片段叫做临界区，此时可以用一种叫做互斥量的东西来对资源进行互斥上锁，互斥量同时只允许一个线程持有，持有互斥量的线程就能访问存在数据竞争的临界区。
 ### std::mutex
-最基本的互斥锁就是std::mutex，独占的互斥锁，不能递归使用，不带超时功能。(一般不直接使用std::mutex)
+最基本的互斥量就是std::mutex，独占的互斥量，不能递归使用，不带超时功能。(一般不直接使用std::mutex)
 ```cc
-class mutex
+class _LIBCPP_TYPE_VIS _LIBCPP_THREAD_SAFETY_ANNOTATION(capability("mutex")) mutex
 {
+    __libcpp_mutex_t __m_ = _LIBCPP_MUTEX_INITIALIZER;
+
 public:
-     constexpr mutex() noexcept;
-     ~mutex();
+    _LIBCPP_INLINE_VISIBILITY
+    _LIBCPP_CONSTEXPR mutex() = default;
 
     mutex(const mutex&) = delete;
     mutex& operator=(const mutex&) = delete;
 
-    void lock();
-    bool try_lock();
-    void unlock();
+#if defined(_LIBCPP_HAS_TRIVIAL_MUTEX_DESTRUCTION)
+    ~mutex() = default;
+#else
+    ~mutex() _NOEXCEPT;
+#endif
 
-    typedef pthread_mutex_t* native_handle_type;
-    native_handle_type native_handle();
+    void lock() _LIBCPP_THREAD_SAFETY_ANNOTATION(acquire_capability());
+    bool try_lock() _NOEXCEPT _LIBCPP_THREAD_SAFETY_ANNOTATION(try_acquire_capability(true));
+    void unlock() _NOEXCEPT _LIBCPP_THREAD_SAFETY_ANNOTATION(release_capability());
+
+    typedef __libcpp_mutex_t* native_handle_type;
+    _LIBCPP_INLINE_VISIBILITY native_handle_type native_handle() {return &__m_;}
 };
 ```
 注意:
 - std::mutex不可复制不可移动。
-- 调用方线程从成功调用lock或者try_lock开始就持有互斥锁，直到调用unlock才释放互斥锁。
+- 调用方线程从成功调用lock或者try_lock开始就持有互斥量，直到调用unlock才释放互斥量。
 - 调用lock的时候，如果这个mutex已经被其他线程持有，那么lock就会阻塞在这里，直到持有mutex的线程调用unlock。如果通过用try_lock来尝试持有一个已经被其他线程持有的锁，那么try_lock不会阻塞，而是会返回false。  
 
 使用例子:
