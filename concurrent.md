@@ -233,7 +233,7 @@ public:
     native_handle_type native_handle() {return &__m_;}
 };
 ```
-通过阅读libcxx源代码可以查看到std::mutex和std::recursive_mutex内部系统级别的互斥量描述符都是pthread_mutex_t，而且进行加锁解锁操作都是通过系统级别的pthread_mutex_lock/pthread_mutex_trylock和pthread_mutex_unlock，那么是哪里不一样导致的std::mutex只能上锁一次而std::recursive_mutex却能锁上加锁？其实就是在他们内部的__m_初始化方式不一样，std::mutex是直接通过PTHREAD_MUTEX_INITIALIZER来初始化__m_的，而std::recursive_mutex则是通过一系列操作来为__m_设置额外PTHREAD_MUTEX_RECURSIVE属性。所以std::recursive_mutex具备了锁上加锁的能力。
+通过阅读libcxx源代码可以查看到std::mutex和std::recursive_mutex内部系统级别的互斥量描述符都是pthread_mutex_t，而且进行加锁解锁操作都是通过系统级别的pthread_mutex_lock/pthread_mutex_trylock和pthread_mutex_unlock，那么是哪里不一样导致的std::mutex只能上锁一次而std::recursive_mutex却能锁上加锁？其实就是在他们内部的__m_初始化方式不一样，std::mutex是直接通过PTHREAD_MUTEX_INITIALIZER来初始化__m_的，而std::recursive_mutex则是通过一系列操作来为__m_设置额外PTHREAD_MUTEX_RECURSIVE属性。所以std::recursive_mutex具备了锁上加锁的能力(可重入性/递归锁)。
 ```cc
 int __libcpp_recursive_mutex_init(__libcpp_recursive_mutex_t *__m)
 {
@@ -373,6 +373,61 @@ int main ()
 }
 ```
 ### std::recursive_timed_mutex
+std::recursive_timed_mutex在std::recursive_mutex的基本互斥和同步基础上支持超时机制，std::timed_mutex类型新增try_lock_for和try_lock_until成员函数，可以在一段时间内尝试获取量或者在指定时间点之前获取互斥量上锁。
+```
+class _LIBCPP_TYPE_VIS recursive_timed_mutex
+{
+    mutex              __m_;
+    condition_variable __cv_;
+    size_t             __count_;
+    __thread_id        __id_;
+public:
+    recursive_timed_mutex();
+    ~recursive_timed_mutex();
+
+private:
+    recursive_timed_mutex(const recursive_timed_mutex&); // = delete;
+    recursive_timed_mutex& operator=(const recursive_timed_mutex&); // = delete;
+
+public:
+    void lock();
+    bool try_lock() _NOEXCEPT;
+    template <class _Rep, class _Period>
+        _LIBCPP_INLINE_VISIBILITY
+        bool try_lock_for(const chrono::duration<_Rep, _Period>& __d)
+            {return try_lock_until(chrono::steady_clock::now() + __d);}
+    template <class _Clock, class _Duration>
+        _LIBCPP_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
+        bool try_lock_until(const chrono::time_point<_Clock, _Duration>& __t);
+    void unlock() _NOEXCEPT;
+};
+template <class _Clock, class _Duration>
+bool
+recursive_timed_mutex::try_lock_until(const chrono::time_point<_Clock, _Duration>& __t)
+{
+    using namespace chrono;
+    __thread_id __id = this_thread::get_id();
+    unique_lock<mutex> lk(__m_);
+    if (__id == __id_)
+    {
+        if (__count_ == numeric_limits<size_t>::max())
+            return false;
+        ++__count_;
+        return true;
+    }
+    bool no_timeout = _Clock::now() < __t;
+    while (no_timeout && __count_ != 0)
+        no_timeout = __cv_.wait_until(lk, __t) == cv_status::no_timeout;
+    if (__count_ == 0)
+    {
+        __count_ = 1;
+        __id_ = __id;
+        return true;
+    }
+    return false;
+}
+```
+std::recursive_timed_mutex和std::recursive_mutex一样具有可重入性，并且和std::timed_mutex一样具有超时性。
 ## std::lock
 
 ## std::condition_variable
@@ -380,3 +435,5 @@ int main ()
 ## std::future && std::promise
 
 ## async
+
+## 自旋锁
