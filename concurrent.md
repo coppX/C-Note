@@ -108,6 +108,7 @@ std::invoke(decay_copy(std::forward<_Fp>(__f)), decay_copy(std::forward<_Args>(_
 - 这里往线程入口函数__f传的参数都是按照移动或者拷贝来传的，因为参数传递的时候进行了decay_copy，退化了引用。所以如果需要往函数里面传引用，必须要程序员手动用std::ref或者std::cref来包裹参数传递给线程函数。(C++的设计者认为std::bind和std::thread默认应该采用拷贝，如果有使用需求，加上std::ref即可实现按引用传递)
 - thread对象一定要join或者detach，不然会导致资源泄露(类似于new了一个对象就撒手不管了)。使用join或者detach之前用joinable来判断是否可以join。
 - thread将忽略来自入口函数的任何返回值。如果有入口函数里面有异常抛出，则调用std::terminate。为将返回值或者异常传递给调用方线程，可使用std::promise或std::async。  
+
 使用例子:
 ```cc
 #include <iostream>
@@ -144,8 +145,59 @@ int main() {
 ```
 
 
-## std::mutex
+## std::mutex相关
+在多线程程序中经常会出现数据竞争问题，存在数据竞争的程序片段叫做临界区，此时可以用一种叫做互斥锁的东西来对资源进行互斥上锁，互斥锁同时只允许一个线程持有，持有互斥锁的线程就能访问存在数据竞争的临界区。
+### std::mutex
+最基本的互斥锁就是std::mutex，独占的互斥锁，不能递归使用，不带超时功能。(一般不直接使用std::mutex)
+```cc
+class mutex
+{
+public:
+     constexpr mutex() noexcept;
+     ~mutex();
 
+    mutex(const mutex&) = delete;
+    mutex& operator=(const mutex&) = delete;
+
+    void lock();
+    bool try_lock();
+    void unlock();
+
+    typedef pthread_mutex_t* native_handle_type;
+    native_handle_type native_handle();
+};
+```
+注意:
+- std::mutex不可复制不可移动。
+- 调用方线程从成功调用lock或者try_lock开始就持有互斥锁，直到调用unlock才释放互斥锁。
+- 调用lock的时候，如果这个mutex已经被其他线程持有，那么lock就会阻塞在这里，直到持有mutex的线程调用unlock。如果通过用try_lock来尝试持有一个已经被其他线程持有的锁，那么try_lock不会阻塞，而是会返回false。  
+
+使用例子:
+```cc
+#include <iostream>
+#include <mutex>
+#include <thread>
+using namespace std;
+std::mutex mutex_;
+int main() {
+    auto func1 = [](int k) {
+        mutex_.lock();
+        for (int i = 0; i < k; ++i) {
+            cout << i << " ";
+        }
+        cout << endl;
+        mutex_.unlock();
+    };
+    std::thread threads[5];
+    for (int i = 0; i < 5; ++i) {
+        threads[i] = std::thread(func1, 200);
+    }
+    for (auto& th : threads) {
+        th.join();
+    }
+    return 0;
+}
+```
 ## std::lock
 
 ## std::condition_variable
