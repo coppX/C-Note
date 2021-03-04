@@ -30,3 +30,44 @@ assert的行为依赖于一个名为NDEBUG的预处理变量，如果定义了ND
 #endif
 ```
 ## __attribute__ 
+
+## __declspec(dllimport) && __declspec(dllexport)
+
+## OS check
+```cc
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+#ifdef _WIN64
+// win64
+#else
+// win32
+#endif
+
+//-----------------------------
+#elif __APPLE__
+#include <TargetConditionals.h>
+#if defined(TARGET_OS_OSX)
+// macos
+#elif TARGET_OS_IPHONE
+// iphone
+#else
+// other APPLE os
+#endif
+
+//-----------------------------
+#elif __ANDROID__
+// android
+
+//-----------------------------
+#elif __linux__
+// linux
+
+#elif __unix__ // all unices not caught above
+// Unix
+
+#elif defined(_POSIX_VERSION)
+// POSIX
+//-----------------------------
+#else
+// other os
+#endif
+```

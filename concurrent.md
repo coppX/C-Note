@@ -198,6 +198,8 @@ int main() {
     return 0;
 }
 ```
+### std::recursive_mutex
+
 ## std::lock
 
 ## std::condition_variable
