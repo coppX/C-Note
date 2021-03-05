@@ -142,11 +142,11 @@ Bullets 7 -- f(t1, ..., tN)
 * Bullets 3 处理其他的情况。
 * 
 * Bullets 4, 5, 6都是处理f是指向成员对象的指针的情况；(f可能是仿函数，std::function,std::bind,lambda产生的对象)
-* Bullets 4仅仅处理t1是T类型或者是T的派生类型的情况，
-* Bullets 5处理t1是T类型的reference_wrapper的情况,
-* Bullets 6处理其他的情况。
+* Bullets 4 仅仅处理t1是T类型或者是T的派生类型的情况，
+* Bullets 5 处理t1是T类型的reference_wrapper的情况,
+* Bullets 6 处理其他的情况。
 *
-* Bullets 7处理第一个参数不是成员函数的情况
+* Bullets 7 处理第一个参数不是成员函数的情况
 */
 ```
 
