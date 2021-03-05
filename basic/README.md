@@ -14,6 +14,8 @@ Summary:
 
 [05. pointer-like and function-like classes](./05_pointer_like_and_function_like_classes.md)
 
+[06. template](./06_template.md)
+
 ---
 
 Code & note by undr22.

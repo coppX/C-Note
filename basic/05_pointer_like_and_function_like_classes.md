@@ -179,3 +179,5 @@ struct less : public binary_function<T, T, T> {
   T operator () ( const T& x, const T& y) const { return x < y; }
 };
 ```
+
+[Next->](./06_template.md)
