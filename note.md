@@ -389,3 +389,15 @@ template<class T, class Deleter = std::default_delete<T>> class unique_ptr;
 通过在编译时绑定删除器，unique_ptr避免了间接调用删除器的运行时开销，通过在运行时绑定删除器，shared_ptr使用户重载删除器更为方便。
 
 ## voliate && mutable
+
+## 宏定义中的##和#
+\#\#表示连接符
+```cc
+//WIDE("abc")就会被替换成L"abc"
+#define WIDE(str) L##str
+```
+\#表示串化
+```cc
+//chSTR2(1 + 1 == 2)会被宏替换为"1 + 1 == 2"而不是计算这个表达式的结果
+#define chSTR2(x) #x
+```
