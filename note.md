@@ -113,6 +113,7 @@ Task* Task::getInstance()
 ```
 
 ## std::invoke
+模板函数invoke对于模板元编程非常有用，该模板函数为调用所有C++可调用类型提供统一的语义。[查看介绍](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4169.html) 
 ```cc
 template <class _Fn, class ..._Args>
 invoke_result_t<_Fn, _Args...>
@@ -123,16 +124,16 @@ invoke(_Fn&& __f, _Args&&... __args)
 }
 ```
 
-由于__invoke的实现比较长，[点击查看](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/type_traits#L3437)
+__invoke的实现比较长[点击查看libcxx具体实现](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/type_traits#L3437)  
 libcxx里面将函数调用分成7种bullets
 
 ```
 TESTING INVOKE(f, t1, t2, ..., tN)
 Bullets 1 -- (t1.*f)(t2, ..., tN)
-Bullets 2 -- (t1.get().*f)(t2, ..., tN)//t1 is a reference_wrapper
+Bullets 2 -- (t1.get().*f)(t2, ..., tN) //t1 is a reference_wrapper
 Bullets 3 -- ((*t1).*f)(t2, ..., tN)
 Bullets 4 -- t1.*f
-Bullets 5 -- t1.get().*f
+Bullets 5 -- t1.get().*f //t1 is a reference_wrapper
 Bullets 6 -- (*t1).*f
 Bullets 7 -- f(t1, ..., tN)
 /*
@@ -150,7 +151,49 @@ Bullets 7 -- f(t1, ..., tN)
 */
 ```
 
-从上面可以看出来调用分成了7种，成员函数六种(成员函数指针3种，成员函数对象3种)，非成员函数一种。
+从上面可以看出来libcxx将调用分成了7种，成员函数六种(成员函数指针3种，成员函数对象3种)，非成员函数一种。   
+使用例子:
+```cc
+#include <functional>
+#include <iostream>
+ 
+struct Foo {
+    Foo(int num) : num_(num) {}
+    void print_add(int i) const { std::cout << num_+i << '\n'; }
+    int num_;
+};
+ 
+void print_num(int i)
+{
+    std::cout << i << '\n';
+}
+ 
+struct PrintNum {
+    void operator()(int i) const
+    {
+        std::cout << i << '\n';
+    }
+};
+ 
+int main()
+{
+    // 调用自由函数
+    std::invoke(print_num, -9);
+ 
+    // 调用 lambda
+    std::invoke([]() { print_num(42); });
+ 
+    // 调用成员函数
+    const Foo foo(314159);
+    std::invoke(&Foo::print_add, foo, 1);
+ 
+    // 调用（访问）数据成员
+    std::cout << "num_: " << std::invoke(&Foo::num_, foo) << '\n';
+ 
+    // 调用函数对象
+    std::invoke(PrintNum(), 18);
+}
+```
 ## new(size_t, void*)
 
 ## allocator
