@@ -15,6 +15,40 @@
 
 注:函数式编程也是对参数直接拷贝，而不是传引用
 
+## std::reference_wrapper
+reference_wrapper将引用包装成一个对象，即引用的包装器。可以包裹一个指向对象或者指向函数指针的引用，既可以通过拷贝构造，也可以通过赋值构造。它常用作将引用存储入无法正常保有引用的标准容器的机制(比如上面的thread和bind就不能直接传递引用)。
+```cc
+template <class _Tp>
+class _LIBCPP_TEMPLATE_VIS reference_wrapper
+    : public __weak_result_type<_Tp>
+{
+public:
+    // types
+    typedef _Tp type;
+private:
+    type* __f_;
+
+public:
+    // construct/copy/destroy
+    _LIBCPP_INLINE_VISIBILITY reference_wrapper(type& __f) _NOEXCEPT
+        : __f_(_VSTD::addressof(__f)) {}
+
+    // access
+    _LIBCPP_INLINE_VISIBILITY operator type&    () const _NOEXCEPT {return *__f_;}
+    _LIBCPP_INLINE_VISIBILITY          type& get() const _NOEXCEPT {return *__f_;}
+
+    // invoke
+    template <class... _ArgTypes>
+    _LIBCPP_INLINE_VISIBILITY
+    typename __invoke_of<type&, _ArgTypes...>::type
+    operator() (_ArgTypes&&... __args) const {
+        return __invoke(get(), _VSTD::forward<_ArgTypes>(__args)...);
+    }
+}
+```
+注:
+- 如果reference_wrapper存储的引用是可调用的，则可以用相同的参数调用reference_wrapper对象，将reference_wrapper对象当作可调用对象来调用，当然原理是通过重载的()运算符调用invoke(请参考std::invoke中bullets 7这种调用情况)。
+- 可以通过get()方法手动获取reference_wrapper所存储的引用。
 ## unordered_map和map的区别
 
 ## push_back和emplace_back的区别
