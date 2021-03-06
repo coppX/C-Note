@@ -14,7 +14,23 @@
 `std::ref`和`std::cref`的区别一个是传引用的时候需要用到，一个是传常量引用的时候用到。
 
 注:函数式编程也是对参数直接拷贝，而不是传引用
-
+std::ref和std::cref的实现就是直接裹了一层reference_wrapper
+```cc
+template <class _Tp>
+inline _LIBCPP_INLINE_VISIBILITY
+reference_wrapper<_Tp>
+ref(_Tp& __t) _NOEXCEPT
+{
+    return reference_wrapper<_Tp>(__t);
+}
+template <class _Tp>
+inline _LIBCPP_INLINE_VISIBILITY
+reference_wrapper<const _Tp>
+cref(const _Tp& __t) _NOEXCEPT
+{
+    return reference_wrapper<const _Tp>(__t);
+}
+```
 ## std::reference_wrapper
 reference_wrapper将引用包装成一个对象，即引用的包装器。可以包裹一个指向对象或者指向函数指针的引用，既可以通过拷贝构造，也可以通过赋值构造。它常用作将引用存储入无法正常保有引用的标准容器的机制(比如上面的thread和bind就不能直接传递引用)。
 ```cc
