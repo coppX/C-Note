@@ -93,3 +93,5 @@ else
 ## ABI和API
 
 ## copy on write
+
+## 交叉编译

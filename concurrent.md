@@ -502,7 +502,73 @@ std::recursive_timed_mutex和std::recursive_mutex一样具有可重入性，并�
 
 ### std::shared_timed_mutex (C++17)
 ## std::lock
+这里介绍两种RAII方式的锁封装，防止线程由于编码失误忘记手动释放锁导致一直持有锁。
+### std::lock_guard
+lock_guard就是采用RAII在构造的时候上锁，析构的时候释放锁
+```cc
+template <class _Mutex>
+class _LIBCPP_TEMPLATE_VIS _LIBCPP_THREAD_SAFETY_ANNOTATION(scoped_lockable)
+lock_guard
+{
+public:
+    typedef _Mutex mutex_type;
 
+private:
+    mutex_type& __m_;
+public:
+
+    _LIBCPP_NODISCARD_EXT _LIBCPP_INLINE_VISIBILITY
+    //上锁
+    explicit lock_guard(mutex_type& __m) _LIBCPP_THREAD_SAFETY_ANNOTATION(acquire_capability(__m))
+        : __m_(__m) {__m_.lock();}
+
+    _LIBCPP_NODISCARD_EXT _LIBCPP_INLINE_VISIBILITY
+    lock_guard(mutex_type& __m, adopt_lock_t) _LIBCPP_THREAD_SAFETY_ANNOTATION(requires_capability(__m))
+        : __m_(__m) {}
+    _LIBCPP_INLINE_VISIBILITY
+    //释放锁
+    ~lock_guard() _LIBCPP_THREAD_SAFETY_ANNOTATION(release_capability()) {__m_.unlock();}
+
+private:
+    lock_guard(lock_guard const&) _LIBCPP_EQUAL_DELETE;
+    lock_guard& operator=(lock_guard const&) _LIBCPP_EQUAL_DELETE;
+};
+
+```
+注意:  
+lock_guard不可复制  
+使用例子:  
+```cc
+#include <thread>
+#include <mutex>
+#include <iostream>
+ 
+int g_i = 0;
+std::mutex g_i_mutex;  // 保护 g_i
+ 
+void safe_increment()
+{
+    std::lock_guard<std::mutex> lock(g_i_mutex);
+    ++g_i;
+ 
+    std::cout << std::this_thread::get_id() << ": " << g_i << '\n';
+ 
+    // g_i_mutex 在锁离开作用域时自动释放
+}
+ 
+int main()
+{
+    std::cout << "main: " << g_i << '\n';
+ 
+    std::thread t1(safe_increment);
+    std::thread t2(safe_increment);
+ 
+    t1.join();
+    t2.join();
+ 
+    std::cout << "main: " << g_i << '\n';
+}
+```
 ## std::condition_variable
 
 ## std::future && std::promise
