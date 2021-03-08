@@ -502,6 +502,19 @@ std::recursive_timed_mutex和std::recursive_mutex一样具有可重入性，并�
 
 ### std::shared_timed_mutex (C++17)
 ## std::lock
+假设有两个互斥量m1,m2，一个线程先锁住m1再锁住m2，另一个线程先锁住m2再锁住m1,就有可能出现死锁。std::lock内部使用了死锁避免的算法，可以有效避免死锁，一次锁住多个互斥量或者可锁定对象(必须满足有try_lock函数):
+```cc
+//对mutex进行上锁
+std::lock(m1, m2);
+
+//对unique_lock进行上锁
+std::unique_lock lock1(m1, std::defer_lock);
+std::unique_lock lock2(m2, std::defer_lock);
+std::lock(lock1, lock2);
+```
+
+[std::lock实现](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/mutex#L446)
+
 这里介绍两种RAII方式的锁封装，防止线程由于编码失误忘记手动释放锁导致一直持有锁。
 ### std::lock_guard
 lock_guard就是采用RAII在构造的时候上锁，析构的时候释放锁
