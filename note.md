@@ -451,3 +451,15 @@ template<class T, class Deleter = std::default_delete<T>> class unique_ptr;
 //chSTR2(1 + 1 == 2)会被宏替换为"1 + 1 == 2"而不是计算这个表达式的结果
 #define chSTR2(x) #x
 ```
+
+## string length中的坑
+```cc
+std::string s = "ABCD";
+s[2] = '\0';
+std::cout << s << std::endl;                //ABD
+std::cout << s.length() << std::endl;       //4
+std::cout << strlen(s.c_str()) << std::endl;//2
+std::cout << s.c_str()<< std::endl;         //AB
+assert(s.size() == strlen(s.c_str()));
+```
+如果在定义string的时候把string的长度先确定了下来，后续代码中将string中间的字符替换成\0，这个时候中间的\0并不会被识别为字符串结束。因为这个字符串的长度已经有了，并不会影响到他的长度。而且C++没有规定string以\0结尾(得看具体编译器的实现了，大部分编译器都是以\0结束字符串)。但是如果我们调用c_str()，就会以\0结束字符串，因为c_str是获取C风格的字符串。如果需要将string转成C风格的字符串，建议使用c_str,这个一定是会以\0截断string的。
