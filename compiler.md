@@ -1,6 +1,6 @@
 # 编译相关篇
-## extern "C" && #ifdef __cplusplus
-
+## extern "C"
+在C++代码里面如果需要调用C语言代码，就需要使用extern “C”告诉编译器，接下来的代码使用C语言的方式进行编译。这是因为C和C++编译后的函数名不一样，C++支持重载，编译后的函数名会带上参数类型，C语言编译后的只有函数名不会带有参数类型。
 ## #pragma unroll/nounroll
 
 ## #pragma pack
