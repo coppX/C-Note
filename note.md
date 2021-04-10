@@ -66,6 +66,9 @@ public:
 - 如果reference_wrapper存储的引用是可调用的，则可以用相同的参数调用reference_wrapper对象，将reference_wrapper对象当作可调用对象来调用，当然原理是通过重载的()运算符调用invoke(请参考std::invoke中bullets 7这种调用情况)。
 - 可以通过get()方法手动获取reference_wrapper所存储的引用。
 ## unordered_map和map的区别
+map内部的实现是用的红黑树，可以在O(logn)时间内完成查找,插入和删除，在单次时间敏感的场景下建议使用map做为容器。  
+unordered_map的内部实现是哈希表，这就决定了，map是一个有序的结构，unordered_map是无序的结构。
+在需要有序性或者对单次查询有时间要求的应用场景下，应该使用map，其余情况应使用unordered_map。因为哈希表虽然查询快，但是最坏情况下的查询很慢，因此如果是对单次查询时间有要求，就用map，一定会在O(logn)下查询完成。
 
 ## push_back和emplace_back的区别
 
