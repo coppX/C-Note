@@ -30,7 +30,8 @@ public:
 ```
 `push_back`有两个版本，分为`const _Tp&`和`_Tp&&`作为参数类型的版本，其中`_Tp&&`这个版本是C++11才有的；  
 `emplace_back`也有两个版本，分为返回值类型为`void`和`_Tp&`，其中返回`void`的是C++11新增的，返回`_Tp&`的版本是C++14新增的;  
-注意:从C++20开始，上面的版本都废弃了，改成上面的版本前面加上`constexpr`关键字(目前我手上的libcxx源代码还没实现对新接口的支持)。  
+注意:从C++20开始，上面的版本都废弃了，改成上面的版本前面加上`constexpr`关键字(目前我手上的libcxx源代码还没实现对新接口的支持)。 
+ 
 看看`push_back`的实现
 ```cc
 template <class _Tp, class _Allocator>
@@ -85,7 +86,7 @@ vector<_Tp, _Allocator>::emplace_back(_Args&&... __args)
 }
 ```
 
-看看统一在空间足够的情况下的操作`__construct_one_at_end`
+看看`push_back`和`emplace_back`在空间足够的情况下的操作`__construct_one_at_end`
 ```cc
   template <class ..._Args>
   _LIBCPP_INLINE_VISIBILITY
@@ -123,4 +124,4 @@ template <class _Tp, class... _Args>
 #endif  // _LIBCPP_HAS_NO_VARIADICS
 ```
 
-因此，上面在`push_back`和`emplace_back`调用`__construct_one_at_end`的时候，传递的参数就会影响到这个元素的构造，首先`push_back`传递的类型是`const _Tp&`和`_Tp&&`，会调用construct里面的第一个函数把参数放置在`vector`最后的位置,而`emplace_back`则会调用`construct`下面这个函数直接在`vector`的最后位置构造一个`_Tp`类型的变量。至于判断调用的是上面的函数还是下面的函数，通过`__has_construct`结构体来判断的。总结就是`emplace_back`可以直接传一个参数，直接就在容器的最后面构造了一个容器类型的变量，而`push_back`想要将一个容器元素类型的变量放到容器后面，需要通过拷贝这个变量或者移动这个变量到容器最后面，`所以emplace_back`从效率上来讲更胜一筹。
+因此，上面在`push_back`和`emplace_back`调用`__construct_one_at_end`的时候，传递的参数就会影响到这个元素的构造，首先`push_back`传递的类型是`const _Tp&`和`_Tp&&`，会调用construct里面的第一个函数把参数放置在`vector`最后的位置,而`emplace_back`则会调用`construct`下面这个函数直接在`vector`的最后位置构造一个`_Tp`类型的变量。至于判断调用的是上面的函数还是下面的函数，通过`__has_construct`结构体来判断的。总结就是`emplace_back`可以直接传一个参数，直接就在容器的最后面构造了一个容器类型的变量，而`push_back`想要将一个容器元素类型的变量放到容器后面，需要通过拷贝这个变量或者移动这个变量到容器最后面，所以`emplace_back`从效率上来讲更胜一筹。
