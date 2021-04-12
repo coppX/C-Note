@@ -91,3 +91,4 @@ int main()
   v.push_back(42);
 }
 ```
+## allocator_traits
