@@ -374,3 +374,13 @@ assert(s.size() == strlen(s.c_str()));
 
 ## ptrdiff_t
 ptrdiff_t是C/C++标准中定义的与机器相关的数据类型，可以表示两个指针相减结果的有符号整数类型，与size_t不同的是，它可以表示负数，可以用于指针算术及数组下标。
+
+## std::visit
+
+## std::get
+
+## dynamic_pointer_cast
+
+## std::holds_alternative
+
+## std::partition_point

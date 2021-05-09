@@ -62,3 +62,5 @@ branch =   T,   T,   N,   T,   T,   T,   T,  N,   T,   N,   N,   T,   T,   T,   
 ## 交叉编译
 
 ## 惊群效应
+
+## 调用DLL报错__acrt_first_block == header
