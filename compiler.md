@@ -32,6 +32,19 @@ assert的行为依赖于一个名为NDEBUG的预处理变量，如果定义了ND
 ## __attribute__ 
 
 ## __declspec(dllimport) && __declspec(dllexport)
+__declspec是用来指定存储类信息的特性扩展语法，这是MSVC支持的特性扩展语法，不属于标准。dllimport和dllexport是用来从DLL中导入或者向其中导出函数、数据和对象。
+
+```
+__declspec( dllimport ) declarator
+__declspec( dllexport ) declarator
+```
+DLL导出:
+导出表是给DLL工程用的，告诉DLL工程，哪些符号是对外公开的，哪些符号是私有的。  
+导入表示给使用DLL工程用的，告诉使用者，要使用哪些符号。  
+如果不用__declspec(dllexport)，那么也可以用DEF文件来实现。  
+如果不用__declspec(dllimport)，那么也可以用LIB文件来实现。  
+DEF文件需要手写，LIB文件一般随着DLL一起发布。
+
 
 ## OS check
 ```cc
