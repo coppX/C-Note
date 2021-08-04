@@ -103,4 +103,27 @@ void thr(std::shared_ptr<Base> p)
 }
 ```
 
-# UE实现的
+# UE实现的TSharedPtr
+```cc
+template< class ObjectType, ESPMode Mode >
+class TSharedPtr
+{
+public:
+	using ElementType = ObjectType;
+
+    template <
+		typename OtherType,
+		typename = decltype(ImplicitConv<ObjectType*>((OtherType*)nullptr))
+	>
+	FORCEINLINE explicit TSharedPtr( OtherType* InObject )
+		: Object( InObject )
+		, SharedReferenceCount( SharedPointerInternals::NewDefaultReferenceController( InObject ) )
+	{
+		UE_TSHAREDPTR_STATIC_ASSERT_VALID_MODE(ObjectType, Mode)
+
+		// If the object happens to be derived from TSharedFromThis, the following method
+		// will prime the object with a weak pointer to itself.
+		SharedPointerInternals::EnableSharedFromThis( this, InObject, InObject );
+	}
+};
+```
