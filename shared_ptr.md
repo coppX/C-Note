@@ -205,7 +205,7 @@ struct FReferenceControllerOps<ESPMode::NotThreadSafe>
 综上所述，UE里面的`TSharedPtr`也是个线程不安全的实现！他所声称的部分线程安全也仅仅是说引用计数是线程安全的，对于所指向的对象却不是。
 
 ## 题外话  enable_shared_from_this
-enable_shared_from_this也能产生一个shared_ptr，但是这既然标准库已经有了shared_ptr，那么enable_shared_from_this又有什么用呢，考虑下面一种情况:
+`enable_shared_from_this`也能产生一个`shared_ptr`，但是这既然标准库已经有了`shared_ptr`，那么`enable_shared_from_this`又有什么用呢，考虑下面一种情况:
 ```cc
 void sock_sender::post_request_no_lock()
 {
@@ -216,7 +216,7 @@ void sock_sender::post_request_no_lock()
         bind(&sock_sender::self_handler, this, _1, _2));
 }
 ```
-异步编程时，我们在传入回调函数的时候，通常需要带上当前类的上下文，或者回调本身就是回调函数，那么这个工作非this莫属了，但是这里可能会出事，如果执行异步回调的时候this已经销毁了怎么办，程序直接crash。这个时候就能用到enable_shared_from_this来解决这个问题。
+异步编程时，我们在传入回调函数的时候，通常需要带上当前类的上下文，或者回调本身就是回调函数，那么这个工作非`this`莫属了，但是这里可能会出事，如果执行异步回调的时候`this`已经销毁了怎么办，程序直接crash。这个时候就能用到`enable_shared_from_this`来解决这个问题。
 ```cc
 class sock_sender : public enable_shared_from_this
 {
@@ -231,14 +231,14 @@ void sock_sender::post_request_no_lock()
         bind(&sock_sender::self_handler, shared_from_this(), _1, _2));
 }
 ```
-ok,这里shared_from_this()直接给sock_sender对象续了一命，直到这个异步回调完成后才会销毁掉sock_sender对象。  
-那有人问了，这里为什么不能直接使用`shared_ptr<sock_sender>(this)`来代替`shared_from_this()`，这个当然不可以,你想想，如果这个对象是通过`shared_ptr<sock_sender> p(new sock_sender); `定义的怎么办，这种情况下，这两个shared_ptr都是独自调用普通的构造函数，不是拷贝构造函数，所以他们的引用计数不是叠加在一起的，如果p给结束了生命周期会释放掉这个对象，异步函数执行的时候还是会crash。这就类似于:
+ok,这里`shared_from_this()`直接给`sock_sender`对象续了一命，直到这个异步回调完成后才会销毁掉`sock_sender`对象。  
+那有人问了，这里为什么不能直接使用`shared_ptr<sock_sender>(this)`来代替`shared_from_this()`，这个当然不可以,你想想，如果这个对象是通过`shared_ptr<sock_sender> p(new sock_sender); `定义的怎么办，这种情况下，这两个`shared_ptr`都是独自调用普通的构造函数，不是拷贝构造函数来由其中一个构造另外一个，按照上面的`shared_ptr`源代码就可以看出来他们的引用计数不是叠加在一起的，如果`p`给结束了生命周期会释放掉这个对象，异步函数执行的时候还是会crash。这就类似于:
 ```cc
 T* t = new T();
 shared_ptr<T> t1(t);
 shared_ptr<t> t2(t);
 ```
-是一样的道理,这里的t1和t2会导致t被释放两次，程序直接炸裂。
+是一样的道理,这里的`t1`和`t2`会导致`t`被释放两次，程序直接炸裂。
 
 # 参考文献
 - [《C++ Concurrency in Action 2nd》](https://github.com/xiaoweiChen/CPP-Concurrency-In-Action-2ed-2019/blob/master/content/chapter5/5.2-chinese.md)  
