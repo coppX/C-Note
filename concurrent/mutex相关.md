@@ -319,8 +319,8 @@ __shared_mutex_base
     condition_variable  __gate2_;
     unsigned            __state_;
 
-    static const unsigned __write_entered_ = 1U << (sizeof(unsigned)*__CHAR_BIT__ - 1);
-    static const unsigned __n_readers_ = ~__write_entered_;
+    static const unsigned __write_entered_ = 1U << (sizeof(unsigned)*__CHAR_BIT__ - 1); // 1000 0000 0000 0000 0000 0000 0000 0000
+    static const unsigned __n_readers_ = ~__write_entered_;                             // 0111 1111 1111 1111 1111 1111 1111 1111
 
     __shared_mutex_base();
     _LIBCPP_INLINE_VISIBILITY ~__shared_mutex_base() = default;
@@ -346,3 +346,122 @@ __shared_mutex_base
 [详情查看](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
 
 ### std::shared_timed_mutex (C++17)
+shared_timed_mutex就是shared_mutex和timed_mutex的结合体，同时具备读写锁和支持超时机制。
+```cpp
+class _LIBCPP_TYPE_VIS _LIBCPP_AVAILABILITY_SHARED_MUTEX shared_timed_mutex
+{
+    __shared_mutex_base __base;
+public:
+    shared_timed_mutex();
+    _LIBCPP_INLINE_VISIBILITY ~shared_timed_mutex() = default;
+
+    shared_timed_mutex(const shared_timed_mutex&) = delete;
+    shared_timed_mutex& operator=(const shared_timed_mutex&) = delete;
+
+    // Exclusive ownership
+    void lock();
+    bool try_lock();
+    template <class _Rep, class _Period>
+        _LIBCPP_INLINE_VISIBILITY
+        bool
+        try_lock_for(const chrono::duration<_Rep, _Period>& __rel_time)
+        {
+            return try_lock_until(chrono::steady_clock::now() + __rel_time);
+        }
+    template <class _Clock, class _Duration>
+        _LIBCPP_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
+        bool
+        try_lock_until(const chrono::time_point<_Clock, _Duration>& __abs_time);
+    void unlock();
+
+    // Shared ownership
+    void lock_shared();
+    bool try_lock_shared();
+    template <class _Rep, class _Period>
+        _LIBCPP_INLINE_VISIBILITY
+        bool
+        try_lock_shared_for(const chrono::duration<_Rep, _Period>& __rel_time)
+        {
+            return try_lock_shared_until(chrono::steady_clock::now() + __rel_time);
+        }
+    template <class _Clock, class _Duration>
+        _LIBCPP_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
+        bool
+        try_lock_shared_until(const chrono::time_point<_Clock, _Duration>& __abs_time);
+    void unlock_shared();
+};
+
+shared_timed_mutex::shared_timed_mutex() : __base() {}
+void shared_timed_mutex::lock()     { return __base.lock(); }
+bool shared_timed_mutex::try_lock() { return __base.try_lock(); }
+void shared_timed_mutex::unlock()   { return __base.unlock(); }
+void shared_timed_mutex::lock_shared() { return __base.lock_shared(); }
+bool shared_timed_mutex::try_lock_shared() { return __base.try_lock_shared(); }
+void shared_timed_mutex::unlock_shared() { return __base.unlock_shared(); }
+
+```
+支持的接口包括，独占型：lock, try_lock, try_lock_for, try_lock_until。共享型: lock_shared, try_lock_shared, try_lock_shared_for, try_lock_shared_until。  
+其中，简单的加锁解锁操作都是利用的base来实现的，包括lock, try_lock, unlock, lock_shared, try_lock_shared, unlock_shared，和上面的shared_mutex类似的实现方式。  
+而其中带有时间的接口，try_lock_for和try_lock_shared_for是依赖于另外一个until接口，try_lock_for是依赖try_lock_until来实现的，try_lock_shared_for是依赖的try_lock_shared_until来实现的。其实现如下:
+```cpp
+
+template <class _Clock, class _Duration>
+bool
+shared_timed_mutex::try_lock_until(
+                        const chrono::time_point<_Clock, _Duration>& __abs_time)
+{
+    unique_lock<mutex> __lk(__base.__mut_);
+    if (__base.__state_ & __base.__write_entered_)
+    {
+        while (true)
+        {
+            cv_status __status = __base.__gate1_.wait_until(__lk, __abs_time);
+            if ((__base.__state_ & __base.__write_entered_) == 0)
+                break;
+            if (__status == cv_status::timeout)
+                return false;
+        }
+    }
+    __base.__state_ |= __base.__write_entered_;
+    if (__base.__state_ & __base.__n_readers_)
+    {
+        while (true)
+        {
+            cv_status __status = __base.__gate2_.wait_until(__lk, __abs_time);
+            if ((__base.__state_ & __base.__n_readers_) == 0)
+                break;
+            if (__status == cv_status::timeout)
+            {
+                __base.__state_ &= ~__base.__write_entered_;
+                __base.__gate1_.notify_all();
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+template <class _Clock, class _Duration>
+bool
+shared_timed_mutex::try_lock_shared_until(
+                        const chrono::time_point<_Clock, _Duration>& __abs_time)
+{
+    unique_lock<mutex> __lk(__base.__mut_);
+    if ((__base.__state_ & __base.__write_entered_) || (__base.__state_ & __base.__n_readers_) == __base.__n_readers_)
+    {
+        while (true)
+        {
+            cv_status status = __base.__gate1_.wait_until(__lk, __abs_time);
+            if ((__base.__state_ & __base.__write_entered_) == 0 &&
+                                       (__base.__state_ & __base.__n_readers_) < __base.__n_readers_)
+                break;
+            if (status == cv_status::timeout)
+                return false;
+        }
+    }
+    unsigned __num_readers = (__base.__state_ & __base.__n_readers_) + 1;
+    __base.__state_ &= ~__base.__n_readers_;
+    __base.__state_ |= __num_readers;
+    return true;
+}
+```
