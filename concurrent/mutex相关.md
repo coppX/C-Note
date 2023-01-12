@@ -32,7 +32,7 @@ public:
 - std::mutex不可复制不可移动。
 - 调用方线程从成功调用lock或者try_lock开始就持有互斥量，直到调用unlock才释放互斥量。
 - 调用lock的时候，如果这个mutex已经被其他线程持有，那么lock就会阻塞在这里，直到持有mutex的线程调用unlock。如果通过用try_lock来尝试持有一个已经被其他线程持有的锁，那么try_lock不会阻塞，而是会返回false。  
-这里的lock操作，并不是直接对__m_进行操作的，而是用的acquire_capability, 这是clang编译器的特性，是clang的线程安全静态分析选项结合使用的代码注释, [详情参考](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
+这里的lock定义后面，有个acquire_capability,包括下面的try_acquire_capability和release_capability，这是clang编译器的特性，是clang的线程安全静态分析选项结合使用的代码注释, [详情参考](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
 使用例子:
 ```cpp
 #include <iostream>
@@ -342,8 +342,93 @@ __shared_mutex_base
 //     native_handle_type native_handle(); // See 30.2.3
 };
 ```
-其内部定义了一个mutex和两个condition_variable，但是，这些在shared_mutex里面都没用上，这个是为后面的shared_timed_mutex准备的，如果只是简单的加锁解锁操作，就直接用clang编译器的attribute来实现的。比如用了acquire_capability()来进行lock，类似于mutex里面的加锁解锁方式。
-[详情查看](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
+这里同样类似于mutex用了Clang的线程安全分析选项。[详情查看](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)  
+分析一下读写锁的实现，首先看看独占的接口
+```cpp
+void
+__shared_mutex_base::lock()
+{
+    unique_lock<mutex> lk(__mut_);
+    while (__state_ & __write_entered_)
+        __gate1_.wait(lk);
+    __state_ |= __write_entered_;
+    while (__state_ & __n_readers_)
+        __gate2_.wait(lk);
+}
+
+bool
+__shared_mutex_base::try_lock()
+{
+    unique_lock<mutex> lk(__mut_);
+    if (__state_ == 0)
+    {
+        __state_ = __write_entered_;
+        return true;
+    }
+    return false;
+}
+
+void
+__shared_mutex_base::unlock()
+{
+    lock_guard<mutex> _(__mut_);
+    __state_ = 0;
+    __gate1_.notify_all();
+}
+```
+第一次调用lock，最开始__state_为0，__write_entered_为0x80000000，不会进入第一个while， __state_变成0x80000000，而__n_readers_为0x7fffffff，同样不会进入第二个循环, 第一次lock是不会进行wait操作的, 条件变量__gate1_和__gate2_都没有被启用。如果这个时候没有调用unlock，__state_就不会被重置，继续调用lock，那么就会进入第一个while，__gate1.wait就会阻塞在这里等待，除非调用一次unlock来对__gate1_调用notify_all进行唤醒，也就是释放掉独占锁才能重新再次加锁。这里如果能进入第二个，表示__state_不为0，即已经调用了一次lock，加上了独占锁了，就应该把这里的共享锁__gate2给阻塞起来。在加上了独占锁(__state_ != 0)的情况下，__gate1和__gate2都会阻塞在这里。  
+try_lock就是如果__state == 0的情况下就表示没有加锁，可以进行上锁操作，参考上面描述的第一次locK，__state为0，否则就加锁失败。  
+unlock重置掉__state_，并且唤醒阻塞的__gate1_。  
+下面看看读写锁里面的共享加锁操作:
+```cpp
+void
+__shared_mutex_base::lock_shared()
+{
+    unique_lock<mutex> lk(__mut_);
+    while ((__state_ & __write_entered_) || (__state_ & __n_readers_) == __n_readers_)
+        __gate1_.wait(lk);
+    unsigned num_readers = (__state_ & __n_readers_) + 1;
+    __state_ &= ~__n_readers_;
+    __state_ |= num_readers;
+}
+
+bool
+__shared_mutex_base::try_lock_shared()
+{
+    unique_lock<mutex> lk(__mut_);
+    unsigned num_readers = __state_ & __n_readers_;
+    if (!(__state_ & __write_entered_) && num_readers != __n_readers_)
+    {
+        ++num_readers;
+        __state_ &= ~__n_readers_;
+        __state_ |= num_readers;
+        return true;
+    }
+    return false;
+}
+
+void
+__shared_mutex_base::unlock_shared()
+{
+    lock_guard<mutex> _(__mut_);
+    unsigned num_readers = (__state_ & __n_readers_) - 1;
+    __state_ &= ~__n_readers_;
+    __state_ |= num_readers;
+    if (__state_ & __write_entered_)
+    {
+        if (num_readers == 0)
+            __gate2_.notify_one();
+    }
+    else
+    {
+        if (num_readers == __n_readers_ - 1)
+            __gate1_.notify_one();
+    }
+}
+```
+首先看lock_shared，while的判断条件中如果__state & __write_entered_ != 0就表示已经加上了独占锁，需要阻塞在__gate1._上，或者(__state_ & __n_readers_) == __n_readers_的情况下也会阻塞在__gate1_上(读的数量已经达到最大了，不能再加了，记录不下了)。等shared_mutex调用unlock释放独占锁来唤醒__gate1_或者调用unlock_shared来唤醒__gate1_。其他情况，只需要增加reader的数量就ok，并记录读的数量到__state_中。  
+try_lock_shared类似于lock_shared的判断条件，判断一下是否处于非独占状态，并且共享锁的数量没有记录满的情况下，就可以对其进行try_lock_shared，否则就不行。  
+unlock_shared首先会减少记录的读的数量，进入__state_ & __write_entered_判断后，表示目前处于独占锁的状态，那么这个时候调用unlock_shared可以对lock里面阻塞的__gate2_进行唤醒。否则，如果num_readers == __n_readers_ - 1就表示释放掉一个共享锁后，可以记录新的共享锁，就可以唤醒lock_shared里面阻塞的_gate1_。类似于消费者消费掉了一个数量后，我们唤醒生产者继续生产。
 
 ### std::shared_timed_mutex (C++17)
 shared_timed_mutex就是shared_mutex和timed_mutex的结合体，同时具备读写锁和支持超时机制。

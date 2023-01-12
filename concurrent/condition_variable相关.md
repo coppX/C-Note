@@ -81,8 +81,24 @@ void condition_variable::wait(unique_lock<mutex>& __lk, _Predicate __pred)
     while (!__pred())
         wait(__lk);
 }
+
+void
+condition_variable::wait(unique_lock<mutex>& lk) _NOEXCEPT
+{
+    if (!lk.owns_lock())
+        __throw_system_error(EPERM,
+                                  "condition_variable::wait: mutex not locked");
+    int ec = __libcpp_condvar_wait(&__cv_, lk.mutex()->native_handle());
+    if (ec)
+        __throw_system_error(ec, "condition_variable wait failed");
+}
+
+int __libcpp_condvar_wait(__libcpp_condvar_t *__cv, __libcpp_mutex_t *__m)
+{
+  return pthread_cond_wait(__cv, __m);
+}
 ```
-生产者线程通过notify来唤醒正在wait的消费者线程，唤醒后就去获取__lk，获取失败会继续等待。获取之后就去检查条件是否满足，如果不满足，自动释放mutex，然后线程继续阻塞在wait上面。如果条件满足就返回并继续持有锁继续往下执行。至于为什么不使用std::lock_guard而是使用std::unique_lock，因为这里如果不满足条件要解锁，而lock_guard没有这么灵活。
+生产者线程通过notify来唤醒正在wait的消费者线程，唤醒后就去获取__lk，获取失败会继续等待。获取之后就去检查条件是否满足，如果不满足，自动释放mutex，然后线程继续阻塞在wait上面。如果条件满足就返回并继续持有锁继续往下执行。至于为什么不使用std::lock_guard而是使用std::unique_lock，因为这里如果不满足条件要解锁，而lock_guard没有这么灵活。wait最终会调用操作系统级别的pthread_cond_wait去等待这个unique_lock。
 注意:  
 wait有时候会在没有任何线程调用notify的情况下返回，这种情况就是有名的spurious wakeup(伪唤醒)。因此当wait返回时，你需要再次检查wait的前置条件是否满足，如果不满足则需要再次wait。wait提供了重载的版本，用于提供前置检查。本质上来说cv::wait是对“忙碌-等待”的一种优化，不理想的方式就是用简单的循环来实现
 ```cpp
