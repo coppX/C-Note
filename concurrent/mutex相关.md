@@ -32,7 +32,7 @@ public:
 - std::mutex不可复制不可移动。
 - 调用方线程从成功调用lock或者try_lock开始就持有互斥量，直到调用unlock才释放互斥量。
 - 调用lock的时候，如果这个mutex已经被其他线程持有，那么lock就会阻塞在这里，直到持有mutex的线程调用unlock。如果通过用try_lock来尝试持有一个已经被其他线程持有的锁，那么try_lock不会阻塞，而是会返回false。  
-这里的lock定义后面，有个acquire_capability,包括下面的try_acquire_capability和release_capability，这是clang编译器的特性，是clang的线程安全静态分析选项结合使用的代码注释, [详情参考](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
+这里的lock定义后面，有个acquire_capability，包括下面的try_acquire_capability和release_capability以及类名定义处的capability("mutex")，这是clang编译器的特性，是clang的线程安全静态分析选项结合使用的代码注释, [详情参考](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
 使用例子:
 ```cpp
 #include <iostream>
@@ -342,7 +342,6 @@ __shared_mutex_base
 //     native_handle_type native_handle(); // See 30.2.3
 };
 ```
-这里同样类似于mutex用了Clang的线程安全分析选项。[详情查看](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)  
 分析一下读写锁的实现，首先看看独占的接口
 ```cpp
 void

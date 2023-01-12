@@ -34,7 +34,6 @@ std::lock和std::try_lock的区别是std::lock是阻塞式的std::try_lock是非
 
 这里介绍几种RAII方式的锁封装，防止线程由于编码失误忘记手动释放锁导致一直持有锁。
 
-### std::scoped_lock(C++17)
 
 ### std::lock_guard
 lock_guard就是采用RAII在构造的时候上锁，析构的时候释放锁
@@ -102,7 +101,49 @@ int main()
     std::cout << "main: " << g_i << '\n';
 }
 ```
+### std::scoped_lock(C++17)
+这是利用的RAII机制在构造的时候对mutex上锁，析构的时候释放锁，是lock_guard的一种扩展形式，毕竟lock_guard只能对一个mutex上锁
+```cpp
+template <class ..._MArgs>
+class _LIBCPP_TEMPLATE_VIS scoped_lock
+{
+    static_assert(sizeof...(_MArgs) > 1, "At least 2 lock types required");
+    typedef tuple<_MArgs&...> _MutexTuple;
 
+public:
+    _LIBCPP_INLINE_VISIBILITY
+    explicit scoped_lock(_MArgs&... __margs)
+      : __t_(__margs...)
+    {
+        _VSTD::lock(__margs...);
+    }
+
+    _LIBCPP_INLINE_VISIBILITY
+    scoped_lock(adopt_lock_t, _MArgs&... __margs)
+        : __t_(__margs...)
+    {
+    }
+
+    _LIBCPP_INLINE_VISIBILITY
+    ~scoped_lock() {
+        typedef typename __make_tuple_indices<sizeof...(_MArgs)>::type _Indices;
+        __unlock_unpack(_Indices{}, __t_);
+    }
+
+    scoped_lock(scoped_lock const&) = delete;
+    scoped_lock& operator=(scoped_lock const&) = delete;
+
+private:
+    template <size_t ..._Indx>
+    _LIBCPP_INLINE_VISIBILITY
+    static void __unlock_unpack(__tuple_indices<_Indx...>, _MutexTuple& __mt) {
+        _VSTD::__unlock(_VSTD::get<_Indx>(__mt)...);
+    }
+
+    _MutexTuple __t_;
+};
+```
+这里是选取的一个通用形式，支持变参模板，他还有一些特化的形式(template<> class scoped_lock<>, template<typename Mutex> class scoped_lock<Mutex>)。
 ### std::unique_lock
 相比于上面的std::lock_guard,std::unique_lock更加的灵活。允许延迟锁定、锁定的有时限尝试、递归锁定、所有权转移和条件变量一同使用。
 ```cpp
