@@ -2,7 +2,7 @@
 在多线程程序中经常会出现数据竞争问题，存在数据竞争的程序片段叫做临界区，此时可以用一种叫做互斥量的东西来对资源进行互斥上锁，互斥量同时只允许一个线程持有，持有互斥量的线程就能访问存在数据竞争的临界区。
 ### std::mutex
 最基本的互斥量就是std::mutex，独占的互斥量，不能递归使用，不带超时功能。(一般不直接使用std::mutex)
-```cc
+```cpp
 class _LIBCPP_TYPE_VIS _LIBCPP_THREAD_SAFETY_ANNOTATION(capability("mutex")) mutex
 {
     __libcpp_mutex_t __m_ = _LIBCPP_MUTEX_INITIALIZER;
@@ -32,9 +32,9 @@ public:
 - std::mutex不可复制不可移动。
 - 调用方线程从成功调用lock或者try_lock开始就持有互斥量，直到调用unlock才释放互斥量。
 - 调用lock的时候，如果这个mutex已经被其他线程持有，那么lock就会阻塞在这里，直到持有mutex的线程调用unlock。如果通过用try_lock来尝试持有一个已经被其他线程持有的锁，那么try_lock不会阻塞，而是会返回false。  
-
+这里的lock操作，并不是直接对__m_进行操作的，而是用的acquire_capability, 这是clang编译器的特性，是clang的线程安全静态分析选项结合使用的代码注释, [详情参考](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
 使用例子:
-```cc
+```cpp
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -62,7 +62,7 @@ int main() {
 ### std::recursive_mutex
 现在有这么一种情况:  
 线程1，临界区A，临界区B和互斥量m，其中临界区A和临界区B都需要持有互斥量m(也就是进入临界区之前要执行加锁操作)才能访问。如果线程1访问临界区A，但是临界区A里面的代码对临界区B里面的代码进行了调用。那么就会出现在线程1想进入B的时候没法对m进行加锁操作，就会导致死锁(lock和try_lock都会)，因为线程1没有释放m，但是线程1又想对m再次加锁。这种情况下，普通的互斥量std::mutex已经不能满足使用了，可以使用std::recursive_mutex来让同一个线程多次上锁。std::recursive_mutex如下:
-```cc
+```cpp
 class _LIBCPP_TYPE_VIS recursive_mutex
 {
     __libcpp_recursive_mutex_t __m_;
@@ -87,7 +87,7 @@ public:
 };
 ```
 通过阅读libcxx源代码可以查看到std::mutex和std::recursive_mutex内部系统级别的互斥量描述符都是pthread_mutex_t，而且进行加锁解锁操作都是通过系统级别的pthread_mutex_lock/pthread_mutex_trylock和pthread_mutex_unlock，那么是哪里不一样导致的std::mutex只能上锁一次而std::recursive_mutex却能锁上加锁？其实就是在他们内部的__m_初始化方式不一样，std::mutex是直接通过PTHREAD_MUTEX_INITIALIZER来初始化__m_的，而std::recursive_mutex则是通过一系列操作来为__m_设置额外PTHREAD_MUTEX_RECURSIVE属性。所以std::recursive_mutex具备了锁上加锁的能力(可重入性/递归锁)。
-```cc
+```cpp
 int __libcpp_recursive_mutex_init(__libcpp_recursive_mutex_t *__m)
 {
     pthread_mutexattr_t attr;
@@ -114,7 +114,7 @@ int __libcpp_recursive_mutex_init(__libcpp_recursive_mutex_t *__m)
 }
 ```
 使用std::recursive_mutex的例子:
-```cc
+```cpp
 #include <iostream>
 #include <thread>
 #include <mutex>
@@ -149,7 +149,7 @@ int main()
 需要注意的一点是对std::recursive_mutex加锁多少次就需要对它进行相应次数的解锁，不然这个线程依旧持有该互斥量。
 ### std::timed_mutex
 std::timed_mutex在std::mutex的基本互斥和同步基础上支持超时机制，std::timed_mutex类型新增try_lock_for和try_lock_until成员函数，可以在一段时间内尝试获取量或者在指定时间点之前获取互斥量上锁。
-```cc
+```cpp
 class _LIBCPP_TYPE_VIS timed_mutex
 {
     mutex              __m_;
@@ -194,7 +194,7 @@ bool timed_mutex::try_lock_until(const chrono::time_point<_Clock, _Duration>& __
 ```
 上面代码可以看到超时机制是利用的条件变量的wait_until来对互斥锁进行等待。调用try_lock_for或者try_lock_until的线程都可以在等待时间内对互斥量进行等待，如果在时间内有其他线程释放了该互斥量，那么该线程就会获得对互斥量的锁。如果等待时间结束，那么就会返回false，不再去尝试对互斥量上锁，程序会继续往下执行。  
 使用例子:
-```cc
+```cpp
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -227,7 +227,7 @@ int main ()
 ```
 ### std::recursive_timed_mutex
 std::recursive_timed_mutex在std::recursive_mutex的基本互斥和同步基础上支持超时机制，std::timed_mutex类型新增try_lock_for和try_lock_until成员函数，可以在一段时间内尝试获取量或者在指定时间点之前获取互斥量上锁。
-```cc
+```cpp
 class _LIBCPP_TYPE_VIS recursive_timed_mutex
 {
     mutex              __m_;
@@ -282,5 +282,67 @@ recursive_timed_mutex::try_lock_until(const chrono::time_point<_Clock, _Duration
 ```
 std::recursive_timed_mutex和std::recursive_mutex一样具有可重入性，并且和std::timed_mutex一样具有超时性。
 ### std::shared_mutex (C++17)
+```cpp
+#if _LIBCPP_STD_VER > 14
+class _LIBCPP_TYPE_VIS _LIBCPP_AVAILABILITY_SHARED_MUTEX shared_mutex
+{
+    __shared_mutex_base __base;
+public:
+    _LIBCPP_INLINE_VISIBILITY shared_mutex() : __base() {}
+    _LIBCPP_INLINE_VISIBILITY ~shared_mutex() = default;
+
+    shared_mutex(const shared_mutex&) = delete;
+    shared_mutex& operator=(const shared_mutex&) = delete;
+
+    // Exclusive ownership
+    _LIBCPP_INLINE_VISIBILITY void lock()     { return __base.lock(); }
+    _LIBCPP_INLINE_VISIBILITY bool try_lock() { return __base.try_lock(); }
+    _LIBCPP_INLINE_VISIBILITY void unlock()   { return __base.unlock(); }
+
+    // Shared ownership
+    _LIBCPP_INLINE_VISIBILITY void lock_shared()     { return __base.lock_shared(); }
+    _LIBCPP_INLINE_VISIBILITY bool try_lock_shared() { return __base.try_lock_shared(); }
+    _LIBCPP_INLINE_VISIBILITY void unlock_shared()   { return __base.unlock_shared(); }
+
+//     typedef __shared_mutex_base::native_handle_type native_handle_type;
+//     _LIBCPP_INLINE_VISIBILITY native_handle_type native_handle() { return __base::unlock_shared(); }
+};
+#endif
+```
+shared_mutex就是我们常说的读写锁，支持独占性加锁和共享性加锁。当我们读临界区的时候，就需要用到shared_mutex的读，使用lock_shared,try_lock_shared和unlock_shared，可以对锁进行共享式上锁解锁，这个时候就可以有多个线程同时访问临界区。当我们对临界区进行写的时候，使用lock, try_lock，unlock对临界区独占加锁解锁，使得只有一个线程独占这个临界区。他内部的实现是封装在一个__shared_mutex_base类型的成员中，其实现如下:
+```cpp
+struct _LIBCPP_TYPE_VIS _LIBCPP_AVAILABILITY_SHARED_MUTEX _LIBCPP_THREAD_SAFETY_ANNOTATION(capability("shared_mutex"))
+__shared_mutex_base
+{
+    mutex               __mut_;
+    condition_variable  __gate1_;
+    condition_variable  __gate2_;
+    unsigned            __state_;
+
+    static const unsigned __write_entered_ = 1U << (sizeof(unsigned)*__CHAR_BIT__ - 1);
+    static const unsigned __n_readers_ = ~__write_entered_;
+
+    __shared_mutex_base();
+    _LIBCPP_INLINE_VISIBILITY ~__shared_mutex_base() = default;
+
+    __shared_mutex_base(const __shared_mutex_base&) = delete;
+    __shared_mutex_base& operator=(const __shared_mutex_base&) = delete;
+
+    // Exclusive ownership
+    void lock() _LIBCPP_THREAD_SAFETY_ANNOTATION(acquire_capability()); // blocking
+    bool try_lock() _LIBCPP_THREAD_SAFETY_ANNOTATION(try_acquire_capability(true));
+    void unlock() _LIBCPP_THREAD_SAFETY_ANNOTATION(release_capability());
+
+    // Shared ownership
+    void lock_shared() _LIBCPP_THREAD_SAFETY_ANNOTATION(acquire_shared_capability()); // blocking
+    bool try_lock_shared() _LIBCPP_THREAD_SAFETY_ANNOTATION(try_acquire_shared_capability(true));
+    void unlock_shared() _LIBCPP_THREAD_SAFETY_ANNOTATION(release_shared_capability());
+
+//     typedef implementation-defined native_handle_type; // See 30.2.3
+//     native_handle_type native_handle(); // See 30.2.3
+};
+```
+其内部定义了一个mutex和两个condition_variable，但是，这些在shared_mutex里面都没用上，这个是为后面的shared_timed_mutex准备的，如果只是简单的加锁解锁操作，就直接用clang编译器的attribute来实现的。比如用了acquire_capability()来进行lock，类似于mutex里面的加锁解锁方式。
+[详情查看](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
 
 ### std::shared_timed_mutex (C++17)

@@ -1,6 +1,6 @@
 ## std::thread
 thread是C++线程类，类thread表示单个执行线程，线程允许多个函数同时执行。libcxx中[std::thread](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/thread#L216)的定义如下:
-```cc
+```cpp
 class _LIBCPP_TYPE_VIS thread {
     __libcpp_thread_t __t_;
 
@@ -37,7 +37,7 @@ public:
 }
 ```
 f表示线程的入口程序，args表示传给f的参数。当新的std::thread对象被构造，并且和入口程序关联后。新的线程就开始执行。
-```cc
+```cpp
 //线程内部的入口函数调用逻辑
 std::invoke(decay_copy(std::forward<_Fp>(__f)), decay_copy(std::forward<_Args>(__args))...);
 ```
@@ -49,7 +49,7 @@ std::invoke(decay_copy(std::forward<_Fp>(__f)), decay_copy(std::forward<_Args>(_
 - thread将忽略来自入口函数的任何返回值。如果有入口函数里面有异常抛出，则调用std::terminate。为将返回值或者异常传递给调用方线程，可使用std::promise或std::async。  
 
 使用例子:
-```cc
+```cpp
 #include <iostream>
 #include <thread>
 using namespace std;
@@ -84,7 +84,7 @@ int main() {
 ```
 ## std::this_thread
 this_thread并不是一个类型，而是一个命名空间，包含一系列访问当前调用者线程的函数。
-```cc
+```cpp
 namespace this_thread
 {
 

@@ -1,6 +1,6 @@
 # shared_ptr的线程安全性
 `shared_ptr`是通过指针保持对象共享所有权的智能指针，多个`shared_ptr`对象可以指向同一对象。`shared_ptr`的部分定义如下:
-```cc
+```cpp
 template<class _Tp>
 class _LIBCPP_TEMPLATE_VIS shared_ptr
 {
@@ -13,7 +13,7 @@ private:
 };
 ```
 看看`shared_ptr`具体的一个构造函数的定义:
-```cc
+```cpp
 //普通构造
 template<class _Tp>
 template<class _Yp>
@@ -44,7 +44,7 @@ shared_ptr<_Tp>::shared_ptr(const shared_ptr<_Yp>& __r, element_type *__p) _NOEX
 
 ```
 上面的`__add_shared()`是由`__cntrl`调用，也就是`__shared_weak_count`类型调用`__add_shared()`,以下是`__shared_weak_count::__add_shared`的实现:
-```cc
+```cpp
 class _LIBCPP_TYPE_VIS __shared_weak_count
     : private __shared_count
 {
@@ -63,7 +63,7 @@ class _LIBCPP_TYPE_VIS __shared_weak_count
 };
 ```
 其中`__shared_count::__add_shared()`的实现如下:
-```cc
+```cpp
 class _LIBCPP_TYPE_VIS __shared_count
 {
     ...
@@ -97,7 +97,7 @@ class _LIBCPP_TYPE_VIS __shared_count
 关于线程安全，《Java并发编程实战》给出的定义如下：一个对象是否需要是线程安全的，取决于它是否被多个线程访问。这只和对象在程序中是以何种方式被使用的有关，和对象本身具体是做什么的无关。当多个线程访问某个类时，这个类始终都能表现出正确的行为，那么就称这个类是线程安全的。线程安全的程序不一定是由线程安全的类组成，完全由线程安全类组成的程序也不一定是线程安全的。还需要一定的组合技巧才能保证线程安全。
 ## 线程安全地使用shared_ptr
 为了线程安全地使用`shared_ptr`,所以常规做法是在写`shared_ptr`的时候进行加锁操作，例如:
-```cc
+```cpp
 void thr(std::shared_ptr<Base> p)
 {
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -114,7 +114,7 @@ void thr(std::shared_ptr<Base> p)
 
 # UE实现的TSharedPtr
 听说，UE也实现了`TSharedPtr`，当我翻开他代码的时候，他注释里面写的是`TSharedPtr`是’有条件‘的线程安全的，so
-```cc
+```cpp
 template< class ObjectType, ESPMode Mode >
 class TSharedPtr
 {
@@ -139,7 +139,7 @@ private:
 };
 ```
 模板`TSharedPtr`第二个模板参数是有三个选择的，线程不安全，线程安全和快速模式，默认选择是`Fast`
-```cc
+```cpp
 enum class ESPMode
 {
 	/** Forced to be not thread-safe. */
@@ -159,7 +159,7 @@ enum class ESPMode
 当我们用一个`TSharedPtr`来拷贝构造另外一个`TSharedPtr`时，他的拷贝构造操作直接把指向对象的指针给赋值了，然后把引用计数也赋值了，他这个引用计数与线程安全参数有关，裸指针并没有线程方面的属性修饰
   
 接着看`FSharedReferencer`的实现
-```cc
+```cpp
 template< ESPMode Mode >
 class FSharedReferencer
 {
@@ -179,7 +179,7 @@ class FSharedReferencer
 };
 ```
 只要拷贝构造这个引用计数，他里面会执行增加引用计数的操作，这个操作由`TOps`来实现，其中`FReferenceControllerOps`定义为:
-```cc
+```cpp
 //'线程安全'版本
 template<>
 struct FReferenceControllerOps<ESPMode::ThreadSafe>
@@ -206,7 +206,7 @@ struct FReferenceControllerOps<ESPMode::NotThreadSafe>
 
 ## 题外话  enable_shared_from_this
 `enable_shared_from_this`也能产生一个`shared_ptr`，但是这既然标准库已经有了`shared_ptr`，那么`enable_shared_from_this`又有什么用呢，考虑下面一种情况:
-```cc
+```cpp
 void sock_sender::post_request_no_lock()
 {
     Request &req = requests_.front();
@@ -217,7 +217,7 @@ void sock_sender::post_request_no_lock()
 }
 ```
 异步编程时，我们在传入回调函数的时候，通常需要带上当前类的上下文，或者回调本身就是回调函数，那么这个工作非`this`莫属了，但是这里可能会出事，如果执行异步回调的时候`this`已经销毁了怎么办，程序直接crash。这个时候就能用到`enable_shared_from_this`来解决这个问题。
-```cc
+```cpp
 class sock_sender : public enable_shared_from_this
 {
     //...
@@ -233,7 +233,7 @@ void sock_sender::post_request_no_lock()
 ```
 ok,这里`shared_from_this()`直接给`sock_sender`对象续了一命，直到这个异步回调完成后才会销毁掉`sock_sender`对象。  
 那有人问了，这里为什么不能直接使用`shared_ptr<sock_sender>(this)`来代替`shared_from_this()`，这个当然不可以,你想想，如果这个对象是通过`shared_ptr<sock_sender> p(new sock_sender); `定义的怎么办，这种情况下，这两个`shared_ptr`都是独自调用普通的构造函数，不是拷贝构造函数来由其中一个构造另外一个，按照上面的`shared_ptr`源代码就可以看出来他们的引用计数不是叠加在一起的，如果`p`给结束了生命周期会释放掉这个对象，异步函数执行的时候还是会crash。这就类似于:
-```cc
+```cpp
 T* t = new T();
 shared_ptr<T> t1(t);
 shared_ptr<t> t2(t);

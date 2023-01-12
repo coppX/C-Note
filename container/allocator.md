@@ -1,10 +1,10 @@
 ## allocator
 如果你留意一下就会发现C++ STL中所有的容器都提供了allocator参数来分配内存，STL推荐使用allocator而不是new/delete，例如:
-```cc
+```cpp
 template<class T, class Allocator = allocator<T>> class vector;
 ```
 C++里面采用new来动态分配内存。默认情况下分配的内存会默认初始化，也就是意味着内置类型或者组合类型的对象值将是未定义的，而类对象会采用默认构造函数来初始化这块内存。
-```cc
+```cpp
 //默认初始化
 string *ps = new string;//初始化为空的string,string类默认构造为空
 int *pi = new int;      //pi指向一个未初始化的int,内置类型未定义
@@ -16,7 +16,7 @@ vector<int> *pv = new vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 ```
 这对于我们来讲，分配内存的操作不够灵活，所以allocator这个类就诞生了(默认的std::allocator里面采用的operator new来分配空间的，我们可以自定义allocator采用其他分配方式，比如下方例子中的malloc)。allocator定义在memory头文件中，它提供了一种类型感知(需要提供类型)的内存分配方法，它分配的内存是原始的，未构造的。将内存的分配和内存构造分离开来。
 ### std::allocator
-```cc
+```cpp
 allocator<string> alloc;            //可以分配string的allocator对象
 //分配内存
 auto const p = alloc.allocate(n);   //分配n个未初始化的string
@@ -40,7 +40,7 @@ alloc.deallocate(p, n);             //归还内存给系统
 - deallocate  
 
 [例子来源点击查看](https://en.cppreference.com/w/cpp/named_req/Allocator)
-```cc
+```cpp
 #include <cstdlib>
 #include <new>
 #include <limits>

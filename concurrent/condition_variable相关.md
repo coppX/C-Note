@@ -4,7 +4,7 @@
 - 生产者总是生成数据放到工作区中，当工作区慢了，它就停下来等消费者消费一部分数据，然后继续工作。
 - 消费者总是从工作区中拿出数据使用，当工作区中的数据被消费空了之后，它也会停下来等待生产者往工作区中放入新的数据。
 cv的作用只是让线程正常扮演生产者消费者的角色，消费者线程往工作区里面放数据，消费者线程从工作区里面拿数据。这里的工作区就是临界区，但是为了保证消费者线程能够互斥的操作工作区里面的数据，所以才需要配合mutex使用。
-```cc
+```cpp
 class _LIBCPP_TYPE_VIS condition_variable
 {
     __libcpp_condvar_t __cv_ = _LIBCPP_CONDVAR_INITIALIZER;
@@ -74,7 +74,7 @@ private:
 注: cv不可拷贝构造，不可拷贝赋值  
 cv提供了两类操作:wait和notify分别对应消费者和生产者，wait就是消费者在等待工作区中的数据，notify就是生产者生成了数据通知消费者来消费。
 - wait:
-```cc
+```cpp
 template <class _Predicate>
 void condition_variable::wait(unique_lock<mutex>& __lk, _Predicate __pred)
 {
@@ -85,7 +85,7 @@ void condition_variable::wait(unique_lock<mutex>& __lk, _Predicate __pred)
 生产者线程通过notify来唤醒正在wait的消费者线程，唤醒后就去获取__lk，获取失败会继续等待。获取之后就去检查条件是否满足，如果不满足，自动释放mutex，然后线程继续阻塞在wait上面。如果条件满足就返回并继续持有锁继续往下执行。至于为什么不使用std::lock_guard而是使用std::unique_lock，因为这里如果不满足条件要解锁，而lock_guard没有这么灵活。
 注意:  
 wait有时候会在没有任何线程调用notify的情况下返回，这种情况就是有名的spurious wakeup(伪唤醒)。因此当wait返回时，你需要再次检查wait的前置条件是否满足，如果不满足则需要再次wait。wait提供了重载的版本，用于提供前置检查。本质上来说cv::wait是对“忙碌-等待”的一种优化，不理想的方式就是用简单的循环来实现
-```cc
+```cpp
 template<typename Predicate>
 void minimal_wait(std::unique_lock<std::mutex>& lk,Predicate
 pred){
@@ -102,7 +102,7 @@ notify就比wait要简单，notify的作用就是用来唤醒wait在cv上的线�
 notify_one唤醒等待的一个线程，注意只唤醒一个。notify_all唤醒所有wait在cv上的线程。
 
 使用例子:
-```cc
+```cpp
 #include <iostream>
 #include <string>
 #include <thread>

@@ -1,6 +1,6 @@
 ## 分支预测
 分支预测是CPU在分支指令执行结束之前猜测哪一路分支将会被运行，以提高处理器的指令流水线的性能。CPU找到一个规律，猜到接下来要执行哪一条指令，然后直接跳过去，这样速度就加快了。
-```cc
+```cpp
 #include <algorithm>
 #include <ctime>
 #include <iostream>

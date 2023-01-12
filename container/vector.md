@@ -1,6 +1,6 @@
 ## push_back和emplace_back的区别
 `push_back`和`emplace_back`都是往`vector`(`deque`和`list`也有这两个函数)尾部插入新的元素，`emplace_back`是C++11新增的接口，先看看`vector`中他们的实现
-```cc
+```cpp
 template<class _Tp, class _Allocator /* = allocator<_Tp> */>
 class _LIBCPP_TEMPLATE_VIS vector : private __vector_base<_Tp, _Allocator>
 {
@@ -33,7 +33,7 @@ public:
 注意:从C++20开始，上面的版本都废弃了，改成上面的版本前面加上`constexpr`关键字(目前我手上的libcxx源代码还没实现对新接口的支持)。 
  
 看看`push_back`的实现
-```cc
+```cpp
 template <class _Tp, class _Allocator>
 inline _LIBCPP_INLINE_VISIBILITY
 void
@@ -63,7 +63,7 @@ vector<_Tp, _Allocator>::push_back(value_type&& __x)
 }
 ```
 接下来是`emplace_back`的实现
-```cc
+```cpp
 template <class _Tp, class _Allocator>
 template <class... _Args>
 inline
@@ -87,7 +87,7 @@ vector<_Tp, _Allocator>::emplace_back(_Args&&... __args)
 ```
 
 看看`push_back`和`emplace_back`在空间足够的情况下的操作`__construct_one_at_end`
-```cc
+```cpp
   template <class ..._Args>
   _LIBCPP_INLINE_VISIBILITY
   void __construct_one_at_end(_Args&& ...__args) {
@@ -98,12 +98,12 @@ vector<_Tp, _Allocator>::emplace_back(_Args&&... __args)
   }
 ```
 这里的`__alloc_traits::construct`参照`std::allocator_traits<Alloc>::construct`的定义
-```cc
+```cpp
 template<class T, class... Args>
 static void construct(Alloc& a, T* p, Args&&... args);
 ```
 其中`__alloc_traits`即为`allocator_traits<_Allocator>`，其中`_Allocator`如果在`vector<T>`定义的时候没有声明就默认为`std::allocator<T>`，所以此时的`__alloc_traits`可以看成`allocator_traits<allocator<T>>`，construct函数也可以看成`construct(allocator<T>& a, T* p, Args&&.. args)`。construct定义如下 
-```cc
+```cpp
 template <class _Tp, class... _Args>
     _LIBCPP_INLINE_VISIBILITY
     static void construct(allocator_type& __a, _Tp* __p, _Args&&... __args)

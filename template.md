@@ -150,13 +150,13 @@ template<typename Type> void intermediary(Type &&arg)
 - 模板参数包，表示零个或者多个模板参数
 - 函数参数包，表示零个或者多个函数参数
   参数包的表示是用省略号`...`来表示的,模板中就是`class...`或者`typename...`。如:
-  ```cc
+  ```cpp
   template<typename T, typename... Args>
   void foo(const T &t, const Args& ... rest);
   ```
 这里的Args是模板参数包，rest就是函数参数包。可以表示数目不确定类型不确定的参数，编译器会通过调用这个函数的实参来推断模板参数类型和数量。
 如果我们需要在代码里面拿到这个参数包里面具体有多少个参数(每次调用参数数量都可能不一样)，可以采用`sizeof...`操作符
-```cc
+```cpp
 template<typename... Args>
 void g(Args ... args) {
   cout << sizeof...(Args) <<endl;   //类型参数的数目
@@ -165,7 +165,7 @@ void g(Args ... args) {
 ```
 ## std::decay类型退化
 在向模板传递模板参数的过程中，如果是按值传递参数，那么参数类型就会退化(decay)。也就是说，裸数组(raw array)和函数会退化成相应的指针， cv限制(const和volatile)会被删除。
-```cc
+```cpp
 template<typename T>
 void printV(T arg){
     ...
@@ -188,14 +188,14 @@ foo("hi", "guy")；
 因为字符串常量"hi"的类型是char const [3], 而"guy"的类型是char const [4]，但是这里的函数模板参数要求是类型相同，所以会有编译问题。  
 退化在很多情况下是有帮助的，尤其是在需要验证两个对象是否有相同的类型或者可以转换成相同的类型(std::is_same)的时候。  
 使用std::decay用来得到退化的类型，libcxx中的decay[实现点击查看](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/type_traits#L1351)
-```cc
+```cpp
 template<class T>
 using decay_t = typename dacay<T>::type;// C++ 14新增
 ```
 可以使用decay_t<T>来简化写法
 ## std::common_type && std::common_type_t
 ## std::is_same
-```cc
+```cpp
 template<typename T, typename U>
 struct is_same;
 //下面是C++17新增
@@ -203,7 +203,7 @@ template<typename T, typename U>
 inline constexpr bool is_same_v = is_same<T, U>::value;
 ```
 std::is_same用于比较两个类型T和U是不是同一类型，如果是，则内部value为true,这里的T和U会严格比较，包括cv限制。如果用std::decay可以退化掉T和U的类型，然后进行比较，可以判断这两个类型是否是同一类型或者是否能相互转化。
-```cc
+```cpp
 std::is_same<int, int&>::value; //false
 std::is_same_v<int, int&>; //false,C++17用法
 std::is_same_v<int, std::decay<int&>>; //true
@@ -214,11 +214,11 @@ std::is_same_v<int, std::decay<const int&>>; //true
 ## 类型萃取(type trait)
 ## 泛型lambda(C++14起)
 C++14引入泛型lambda，是一种成员模板的简化。
-```cc
+```cpp
 auto lambda = [](auto x, auto y){return x + y;};
 ```
 编译器会默认为它构造下面一个类:
-```cc
+```cpp
 class SomeCompilerSpecificName {
 public:
     SomeCompilerSpecificName();//constructor only called by compiler
@@ -231,13 +231,13 @@ public:
 
 ## 模板的模板参数(Template Template Parameter)
 用模板的模板参数，能做到只指定容器类型而不需要指定元素类型
-```cc
+```cpp
 Stack<int, std::vector<int>> s
 //通过模板的模板参数可以写为
 Stack<int, std::vector> s;
 ```
 为此必须把第二个模板参数指定为模板的模板参数
-```cc
+```cpp
 template<typanem T,
     template<typename Elem> class Cont = std::deque>
 class Stack {
@@ -253,16 +253,16 @@ public:
 };
 ```
 第二个模板参数是一个类模板，而且它会被第一个模板参数实例化:
-```cc
+```cpp
 Cont<T> elems;//模板类被第一个参数实例化
 ```
 因为Cont没有用到模板参数Elem，所以可以省略Elem
-```cc
+```cpp
 template<typename T,
     template<typename> class Cont = std::deque>
 ```
 对于模板的模板参数Cont, C++11之前只能用class关键字修饰, C++11之后可以用别名模板的名称来替代，C++17中可以用typename修饰
-```cc
+```cpp
 //since C++17
 template<typename T,
     template<typename> typename Cont = std::deque>
@@ -272,7 +272,7 @@ private:
 }
 ```
 由于默认的std::deque和Cont的参数不匹配，所以可以将代码定义成这样:
-```cc
+```cpp
 template<typename T, template<typename Elem,
     typename Alloc = std::allocator<Elem>> class Cont = std::deque>
 class Stack {
@@ -280,7 +280,7 @@ class Stack {
 };
 ```
 这里的Alloc没有用到也可以省略
-```cc
+```cpp
 template<typename T, template<typename Elem,
     typename = std::allocator<Elem>> class Cont = std::deque>
 class Stack {
@@ -307,7 +307,7 @@ void Stack<T, Cont>::push(T const& elem){
 1. 如果没有第二个模板参数，返回类型是void。
 2. 否则，返回类型是其第二个参数的类型。
 - 如果表达式结果是false，则其成员类型是未定义的。更加模板的一个叫做SFINAE的规则，这会导致包含std::enalbe_if<>表达式的函数模板被忽略掉。
-```cc
+```cpp
 template<typname T>
 typename std::enable_if<(sizeof(T) > 4)>::type
 foo(){
@@ -315,14 +315,14 @@ foo(){
 }
 ```
 如果sizeof(T)>4成立，函数模板会被展开成
-```cc
+```cpp
 template<typename T>
 void foo(){
     ...
 }
 ```
 否则，这个函数模板会被忽略掉。如果我们给std::enable_if<>传递第二个参数:
-```cc
+```cpp
 template<typename T>
 typename std::enable_if<(sizeof(T) > 4), T>::type
 foo() {
@@ -330,21 +330,21 @@ foo() {
 }
 ```
 当sizeof(T) > 4满足时，std::enable_if会被扩展成第二个模板参数。
-```cc
+```cpp
 template<typename T>
 T foo() {
     return T();
 }
 ```
 但是由于将enable_if表达式放在声明的中间不是一个明智的做法，因此使用std::enable_if<>的更常见的方法是使用一个额外的、有默认值的模板参数:
-```cc
+```cpp
 template<typename T, typename = std::enable_if_t<(sizeof(T) > 4)>>
 void foo() {
 
 }
 ```
 如果sizeof(T) > 4，它会被展开成:
-```cc
+```cpp
 template<typename T, typename = void>
 void foo() {
 
@@ -354,7 +354,7 @@ void foo() {
 
 ## if constexpr (C++17)
 if constexpr(...)是C++17引入的可以在编译期基于某些条件禁用或启用相应代码的编译期语句。
-```cc
+```cpp
 template<typename T, typename... Types>
 void print(T const& firstArg, Types const&... args) {
     std::cout<< firstArg << '\n';

@@ -1,21 +1,21 @@
 ## do{}while(0)
 这是个用于宏的语法技巧，举个例子
-```cc
+```cpp
 #define SAFA_FREE(p) do{delete(p); p=nullptr;}while(0)
 ```
 这里的do{}while(0)的作用就是为了把代码块里面的语句当做一个整体。如果不用这种技巧，则变成了
-```cc
+```cpp
 #define SAFA_FREE(p) delete(p); p = nllptr;
 ```
 看以下代码就能区分这两种写法的区别了:
-```cc
+```cpp
 if (p)
     SAFE_FREE(p)
 else
     p = nullptr;
 ```
 使用第一种写法展开:
-```cc
+```cpp
 if (p)
     do{
         delete(p);
@@ -25,7 +25,7 @@ else
     p = nullptr;
 ```
 使用第二种写法展开:
-```cc
+```cpp
 if (p)
     delete(p);
     p = nullptr;

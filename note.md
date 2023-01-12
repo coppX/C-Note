@@ -15,7 +15,7 @@
 
 注:函数式编程也是对参数直接拷贝，而不是传引用
 std::ref和std::cref的实现就是直接裹了一层reference_wrapper
-```cc
+```cpp
 template <class _Tp>
 inline _LIBCPP_INLINE_VISIBILITY
 reference_wrapper<_Tp>
@@ -33,7 +33,7 @@ cref(const _Tp& __t) _NOEXCEPT
 ```
 ## std::reference_wrapper
 reference_wrapper将引用包装成一个对象，即引用的包装器。可以包裹一个指向对象或者指向函数指针的引用，既可以通过拷贝构造，也可以通过赋值构造。它常用作将引用存储入无法正常保有引用的标准容器的机制(比如上面的thread和bind就不能直接传递引用)。
-```cc
+```cpp
 template <class _Tp>
 class _LIBCPP_TEMPLATE_VIS reference_wrapper
     : public __weak_result_type<_Tp>
@@ -83,7 +83,7 @@ unordered_map的内部实现是哈希表，这就决定了，map是一个有序�
 C++标准库中很多资源占用类型,比如IO对象std::ifstream，std::unique_ptr，std::thread, std::future都只可以移动，不能拷贝
 ## std::for_each
 先看看llvm中std::for_each源代码的实现
-```cc
+```cpp
 template<class _InputIterator, class _Function>
 inline _LIBCPP_INLINEVISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX17
 _Function for_each(_InputIterator __first, _InputIterator __last, _Function __f)
@@ -94,7 +94,7 @@ _Function for_each(_InputIterator __first, _InputIterator __last, _Function __f)
 }
 ```
 从代码可以看出来for_each是对迭代器区间[_first,_last)内元素逐个进行__f操作，并且操作完成后返回f,这里的__f是可调用对象，使用例子
-```cc
+```cpp
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -130,7 +130,7 @@ int main()
 llvm中的实现[点击查看源代码](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/functional#L1402)
 std::mem_fn生成指向成员指针的包装对象，它可以存储，复制及调用执行成员指针。到对象的引用和指针(含智能指针)可在调用std::mem_fn时使用
 这里结合std::for_each举例(实际上std::mem_fn很多时候是配合std::for_each使用的)
-```cc
+```cpp
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -152,7 +152,7 @@ int main() {
 这里对每个线程都执行join操作，这里的jion被std::mem_fn包装成一个对象，实际上就是用这个函数指针构造一个__mem_fn([llvm里面的实现](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/functional#L1279))类对象并返回。
 ## std::call_once && std::once_flag
 有的地方需要代码只执行一次，比如说单例初始化， call_once能保证函数在任何情况下只调用一次，call_once需要配合once_flag使用
-```cc
+```cpp
 Task* Task::getInstance()
 {
     static std::once_flag flag;
@@ -166,7 +166,7 @@ Task* Task::getInstance()
 
 ## std::invoke
 模板函数invoke对于模板元编程非常有用，该模板函数为调用所有C++可调用类型提供统一的语义。[查看介绍](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4169.html) 
-```cc
+```cpp
 template <class _Fn, class ..._Args>
 invoke_result_t<_Fn, _Args...>
 invoke(_Fn&& __f, _Args&&... __args)
@@ -205,7 +205,7 @@ Bullets 7 -- f(t1, ..., tN)
 
 从上面可以看出来libcxx将调用分成了7种，成员函数六种(成员函数指针3种，成员函数对象3种)，非成员函数一种。   
 使用例子:
-```cc
+```cpp
 #include <functional>
 #include <iostream>
  
@@ -252,7 +252,7 @@ int main()
 ### 内存对齐
 每个对象类型都有被称为对齐要求的性质，表示这个类型对象在内存中占用的连续相邻地址的字节数(类型std::size_t，总是2的幂，比如char对齐1，int对齐4)  
 结构体的对齐
-```cc
+```cpp
 struct A{ //  32位机器
   char a; //1个字节，对齐4个字节
   int b;  //4个字节，对齐4个字节
@@ -263,7 +263,7 @@ struct A{ //  32位机器
 内存对齐规则:  
 各成员变量存放的起始地址相对于结构的起始地址的偏移量必须为该变量的类型所占用的字节数的倍数，各成员变量在存放的时候根据在结构中出现的顺序依次申请空间，同时按照上面的对齐方式调整位置，空缺的字节自动填充，同时为了确保结构的大小为结构的字节边界数(即该结构中占用最大的空间的类型的字节数)的倍数，所以在为最后一个成员变量申请空间后，还会根据需要自动填充空缺的字节。
 ### std::align
-```cc
+```cpp
 void* align(
   size_t alignment,     //input 欲求的对齐量(2的幂，否则align行为是未定义的)
   size_t size,          //input 要被对齐的存储大小
@@ -275,7 +275,7 @@ std::align的作用:将一块给定的内存(起始地址ptr，长度space)，�
 GCC's `std::align`[implementation](https://github.com/gcc-mirror/gcc/blob/41d6b10e96a1de98e90a7c0378437c3255814b16/libstdc%2B%2B-v3/include/std/memory#L114)  
 LLVM's `std::align`[implementation](https://github.com/llvm-mirror/libcxx/blob/6952d1478ddd5a1870079d01f1a0e1eea5b09a1a/src/memory.cpp#L217)
 
-```cc
+```cpp
 #include <type_traits> // std::alignment_of()
 #include <memory>
 //...
@@ -300,7 +300,7 @@ while (std::align(alignment, sizeof(MyObj), ptr, space)) {
 ### alignas & alignof
 alignas是用来指定变量或者用户定义类型的对齐方式。  
 alignof是获取指定变量或者用户定义类型的对齐方式。
-```cc
+```cpp
 // alignas_alignof.cpp
 // compile with: cl /EHsc alignas_alignof.cpp
 #include <iostream>
@@ -325,7 +325,7 @@ alignment_of是对alignof进行了封装，alignment_of类里面包含alignof类
 `std::ceil(arg)`表示对arg向上取整  
 `std::floor(arg)`表示对arg向下取整  
 `std::log2(arg)`表示对arg取2的对数
-```cc
+```cpp
 std::ceil(5.88)//6 
 std::floor(5.88)//5
 std::log2(65536)//16
@@ -341,7 +341,7 @@ constexpr指定变量或者函数的值,constexpr用于变量时，变量不可�
 
 ## enum class
 ## unique_ptr && shared_ptr删除器
-```cc
+```cpp
 template<class T, class Deleter = std::default_delete<T>> class unique_ptr;
 ```
 通过在编译时绑定删除器，unique_ptr避免了间接调用删除器的运行时开销，通过在运行时绑定删除器，shared_ptr使用户重载删除器更为方便。
@@ -350,18 +350,18 @@ template<class T, class Deleter = std::default_delete<T>> class unique_ptr;
 
 ## 宏定义中的##和#
 \#\#表示连接符
-```cc
+```cpp
 //WIDE("abc")就会被替换成L"abc"
 #define WIDE(str) L##str
 ```
 \#表示串化
-```cc
+```cpp
 //chSTR2(1 + 1 == 2)会被宏替换为"1 + 1 == 2"而不是计算这个表达式的结果
 #define chSTR2(x) #x
 ```
 
 ## string length中的坑
-```cc
+```cpp
 std::string s = "ABCD";
 s[2] = '\0';
 std::cout << s << std::endl;                //ABD

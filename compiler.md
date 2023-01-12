@@ -9,7 +9,7 @@
 
 ## NDEBUG
 assert的行为依赖于一个名为NDEBUG的预处理变量，如果定义了NDEBUG,assert就啥也不做。
-```cc
+```cpp
 #ifdef NDEBUG
 
     #define assert(expression) ((void)0)
@@ -47,7 +47,7 @@ DEF文件需要手写，LIB文件一般随着DLL一起发布。
 
 
 ## OS check
-```cc
+```cpp
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 #ifdef _WIN64
 // win64
@@ -86,7 +86,7 @@ DEF文件需要手写，LIB文件一般随着DLL一起发布。
 ```
 
 ## compiler check
-```cc
+```cpp
 #if defined(__clang__) || defined(__GNUC__)
 
 	#define CPP_STANDARD __cplusplus
@@ -99,7 +99,7 @@ DEF文件需要手写，LIB文件一般随着DLL一起发布。
 ```
 
 ## C++ version check
-```cc
+```cpp
 //CPP_STANDARD的定义参考上面的compiler check
 #if CPP_STANDARD >= 199711L     //C++03以下
 	#define HAS_CPP_03 1
