@@ -376,9 +376,10 @@ __shared_mutex_base::unlock()
     __gate1_.notify_all();
 }
 ```
-第一次调用lock，最开始__state_为0，__write_entered_为0x80000000，不会进入第一个while， __state_变成0x80000000，而__n_readers_为0x7fffffff，同样不会进入第二个循环, 第一次lock是不会进行wait操作的, 条件变量__gate1_和__gate2_都没有被启用。如果这个时候没有调用unlock，__state_就不会被重置，继续调用lock，那么就会进入第一个while，__gate1.wait就会阻塞在这里等待，除非调用一次unlock来对__gate1_调用notify_all进行唤醒，也就是释放掉独占锁才能重新再次加锁。这里如果能进入第二个，表示__state_不为0，即已经调用了一次lock，加上了独占锁了，就应该把这里的共享锁__gate2给阻塞起来。在加上了独占锁(__state_ != 0)的情况下，__gate1和__gate2都会阻塞在这里。  
+第一次调用lock，最开始__state_为0，__write_entered_为0x80000000，不会进入第一个while， __state_变成0x80000000，而__n_readers_为0x7fffffff，同样不会进入第二个循环, 第一次lock是不会进行wait操作的, 条件变量__gate1_和__gate2_都没有被启用。如果这个时候没有调用unlock，__state_就不会被重置，继续调用lock，那么就会进入第一个while，表示已经进入了独占锁的状态，__gate1.wait就会阻塞在这里等待，除非调用一次unlock来对__gate1_调用notify_all进行唤醒，也就是释放掉独占锁才能重新再次加锁。这里如果能进入第二个，表示shared_mutex已经是处于共享锁的状态了，就应该把这里的共享锁__gate2给阻塞起来，除非在unlock_shared里面把所有的读锁都释放掉，才能唤醒__gate2_。在加上了独占锁(__state_ != 0)的情况下，__gate1和__gate2都会阻塞在这里。 
 try_lock就是如果__state == 0的情况下就表示没有加锁，可以进行上锁操作，参考上面描述的第一次locK，__state为0，否则就加锁失败。  
 unlock重置掉__state_，并且唤醒阻塞的__gate1_。  
+__gate1_表示是的独占状态下对加锁的阻塞和记录读锁数量满了的情况下的阻塞，__gate2_表示的是共享状态下对加锁的阻塞，__state_用来记录是否处于独占锁，和有多少共享锁。   
 下面看看读写锁里面的共享加锁操作:
 ```cpp
 void
@@ -525,7 +526,10 @@ shared_timed_mutex::try_lock_until(
     }
     return true;
 }
-
+```
+首先来看上面这个if，如果之前没有使用过lock操作，那么第一次进入这个函数，if判断__base.__state_ & __base.__write_entered_是进不去的，__state为0。然后下一句就会把__write_entered_设置给__state_，也不会进入第二个if判断，立马返回true, 独占加锁成功。我们第二次再来调用这个try_lock_until(也就是在独占加锁未释放的情况下)，那么第一个if是能进入的，我们就在while里面一直对__gate1_等待，如果某一次循环后(__base.__state_ & __base.__write_entered_) == 0条件满足，就表示在其他地方重置了__state_，也就是调用了unlock操作，这里就能加锁成功，break，跳出while死循环，返回true。如果等待的结果是timeout，就表示已经等待超时了，我们不需要再等待了，直接返回false即可。  
+第二个if表示我们在有读线程的情况下，进行独占加锁的操作，那么我们就会对__gate2_进行阻塞等待，如果某次__gate2_醒来后发现，(__base.__state_ & __base.__n_readers_) == 0成立，也就是说没有读线程了，只有写线程，那么我们就不需要对__gate2_进行等待操作了，直接break, 返回true，独占加锁成功， 已经没有共享加锁了。如果等待的结果是timeout，那么已经等待超时了，我们取消掉独占加锁(__base.__state_ &= ~__base.__write_entered_)，并且尝试唤醒__gate1_，返回false，加锁失败。
+```cpp
 template <class _Clock, class _Duration>
 bool
 shared_timed_mutex::try_lock_shared_until(
@@ -550,3 +554,4 @@ shared_timed_mutex::try_lock_shared_until(
     return true;
 }
 ```
+这里的if有两个判断条件，类似于try_lock_shared, 第一个表示处于独占加锁状态，第二个表示读锁的记录已满的状态，这两种状态都需要对__gate1_进行阻塞等待，如果__gate1_醒来后发现已经没有写锁了，并且还能记录得下新的读锁，那么就break跳出循环，更新记录写锁数量，然后返回true。如果等待的结果是超时，那么也别等了，已经加锁失败了，返回false。
