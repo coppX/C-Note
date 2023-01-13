@@ -1,4 +1,5 @@
-## std::thread
+## thread相关
+### std::thread
 thread是C++线程类，类thread表示单个执行线程，线程允许多个函数同时执行。libcxx中[std::thread](https://github.com/llvm-mirror/libcxx/blob/78d6a7767ed57b50122a161b91f59f19c9bd0d19/include/thread#L216)的定义如下:
 ```cpp
 class _LIBCPP_TYPE_VIS thread {
@@ -82,7 +83,7 @@ int main() {
     return 0;
 }
 ```
-## std::this_thread
+### std::this_thread
 this_thread并不是一个类型，而是一个命名空间，包含一系列访问当前调用者线程的函数。
 ```cpp
 namespace this_thread

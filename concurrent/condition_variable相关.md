@@ -1,4 +1,5 @@
-## std::condition_variable
+## condition_variable相关
+### std::condition_variable
 条件变量std::condition_variable(以下简称cv)也是一种用来同步的原语。可以阻塞多个线程，直到一个线程修改了条件，并且通知其他线程。cv需要结合互斥量一起使用，cv的每个wait函数第一个参数都是unique_lock<mutex>。cv只是为了让多个线程间同步协作，这对于生产者-消费者模型很有意义。在这个模型下:
 - 生产者和消费者共享一个工作区，这个工作区的大小是有限的。
 - 生产者总是生成数据放到工作区中，当工作区满了，它就停下来等消费者消费一部分数据，然后继续工作。
@@ -173,3 +174,5 @@ int main()
     worker.join();
 }
 ```
+
+### condition_variable_any
