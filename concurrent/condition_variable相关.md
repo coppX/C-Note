@@ -176,3 +176,52 @@ int main()
 ```
 
 ### condition_variable_any
+```cpp
+class _LIBCPP_TYPE_VIS condition_variable_any
+{
+    condition_variable __cv_;
+    shared_ptr<mutex>  __mut_;
+public:
+    _LIBCPP_INLINE_VISIBILITY
+    condition_variable_any();
+
+    _LIBCPP_INLINE_VISIBILITY
+    void notify_one() _NOEXCEPT;
+    _LIBCPP_INLINE_VISIBILITY
+    void notify_all() _NOEXCEPT;
+
+    template <class _Lock>
+        _LIBCPP_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
+        void wait(_Lock& __lock);
+    template <class _Lock, class _Predicate>
+        _LIBCPP_INLINE_VISIBILITY
+        void wait(_Lock& __lock, _Predicate __pred);
+
+    template <class _Lock, class _Clock, class _Duration>
+        _LIBCPP_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
+        cv_status
+        wait_until(_Lock& __lock,
+                   const chrono::time_point<_Clock, _Duration>& __t);
+
+    template <class _Lock, class _Clock, class _Duration, class _Predicate>
+        bool
+        _LIBCPP_INLINE_VISIBILITY
+        wait_until(_Lock& __lock,
+                   const chrono::time_point<_Clock, _Duration>& __t,
+                   _Predicate __pred);
+
+    template <class _Lock, class _Rep, class _Period>
+        cv_status
+        _LIBCPP_INLINE_VISIBILITY
+        wait_for(_Lock& __lock,
+                 const chrono::duration<_Rep, _Period>& __d);
+
+    template <class _Lock, class _Rep, class _Period, class _Predicate>
+        bool
+        _LIBCPP_INLINE_VISIBILITY
+        wait_for(_Lock& __lock,
+                 const chrono::duration<_Rep, _Period>& __d,
+                 _Predicate __pred);
+};
+```
+注意看conditiona_variable的wait系列函数的第一个参数，发现没，都是unique_lock类型的参数，而在condition_variable_any中的wait系列第一个参数都是一个模板类型的参数，适用于任何基本可锁定的对象。condition_variable_any内部其实也是用的conditiona_variable类型的成员来做的，相当于对其他类型的可锁定对象做了额外的封装。所以condition_variable_any的适用范围更广，但是性能就比condition_variable要差，因此推荐优先使用condition_variable。
