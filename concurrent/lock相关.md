@@ -316,7 +316,7 @@ void process_data() {
 }
 ```
 
-### shared_lock(C++14)
+### std::shared_lock(C++14)
 ```cpp
 template <class _Mutex>
 class shared_lock
@@ -506,5 +506,5 @@ shared_lock<_Mutex>::unlock()
 ```
 从成员函数看出来shared_lock可以支持的互斥量类型:
 - lock/try_lock/unlock:内部调用的是lock_shared，try_lock_shared, unlock_shared
-- try_lock_for/try_lock_until: 内部调用的是try_lock_shared_for，try_lock_shared_until
-这些接口全部要求共享式加锁解锁，因此，shared_lock仅适用于shared_mutex，shared_timed_mutex这两种支持共享式加锁的mutex。同时类似于unique_lock，shared_lock也支持构造的时候指定锁的状态，是否构造的时候就加锁，并且也shared_lock支持移动操作，能转移锁的所有权。
+- try_lock_for/try_lock_until: 内部调用的是try_lock_shared_for，try_lock_shared_until  
+这些接口全部要求共享式加锁解锁，因此，shared_lock仅适用于shared_mutex，shared_timed_mutex这两种支持共享式加锁的mutex。同时类似于unique_lock，shared_lock也支持构造的时候指定锁的状态，是否构造的时候就加锁，并且shared_lock支持移动操作，也能转移锁的所有权。
